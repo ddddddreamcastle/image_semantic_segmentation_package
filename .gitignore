@@ -178,3 +178,7 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 .idea/image_semantic_segment_package.iml
 .idea/vcs.xml
+.idea/webServers.xml
+.idea/modules.xml
+.idea/misc.xml
+.idea/deployment.xml
