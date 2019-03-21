@@ -2,6 +2,7 @@ import torch
 import torch.utils.model_zoo as model_zoo
 import torch.nn as nn
 import torch.nn.functional as F
+
 """
     Reference:
         [1] He, Kaiming, et al. "Deep residual learning for image recognition." Proceedings of the IEEE conference on computer vision and pattern recognition. 2016.
@@ -96,7 +97,7 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, pretrained=False, nbr_classes=1000):
+    def __init__(self, pretrained=False, nbr_classes=1000, is_bottleneck = True, nbr_layers=50):
         super(ResNet, self).__init__()
         self.head = nn.Sequential(
             conv3x3(3, 64, stride=2),
@@ -110,7 +111,30 @@ class ResNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
+        residual_block = Bottleneck if is_bottleneck else BasicBlock
+        self.block_1 = self._make_layers(residual_block, )
 
-    def _make_layers(self):
+
+
+    def _make_layers(self, block, in_channel, out_channel, nbr_blocks, stride=1, dilation=1):
+        downsample = None
+        if stride != 1 or in_channel != out_channel * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(in_channel, out_channel * block.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channel * block.expansion)
+            )
+        layers = []
+        layers.append(block(in_channel, out_channel, stride=stride, downsample=downsample,
+            dilation=1 if dilation == 1 else dilation // 2))
+
+        in_channel = out_channel * block.expansion
+
+        for _ in range(1, nbr_blocks):
+            layers.append(block(in_channel, out_channel, stride=stride, dilation=dilation))
+
+        return nn.Sequential(*layers)
+
+
+
 
 
