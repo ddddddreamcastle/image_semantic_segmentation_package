@@ -165,3 +165,10 @@ class ResNet(nn.Module):
             layers.append(block(in_channel, out_channel, dilation=dilation))
 
         return nn.Sequential(*layers)
+
+def get_resnet(nbr_classes=1000, is_bottleneck = True, nbr_layers=50, pretrained=True):
+    model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
+    if pretrained:
+        weights_name = {50: 'resnet50.pth'}
+        model.load_state_dict(torch.load('../weights/{}'.format(weights_name)), strict=True)
+    return model
