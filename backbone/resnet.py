@@ -166,9 +166,13 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-def get_resnet(nbr_classes=1000, is_bottleneck = True, nbr_layers=50, pretrained=True):
-    model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
-    if pretrained:
-        weights_name = {50: 'resnet50.pth'}
-        model.load_state_dict(torch.load('../weights/{}'.format(weights_name)), strict=True)
-    return model
+def get_resnet(nbr_layers=50):
+    weights_name = {50: 'resnet50.pth'}
+
+    def build_net(nbr_classes=1000, is_bottleneck = True, pretrained=True):
+        model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
+        if pretrained:
+            model.load_state_dict(torch.load('../weights/{}'.format(weights_name[nbr_layers])), strict=True)
+        return model
+
+    return build_net
