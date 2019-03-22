@@ -2,6 +2,7 @@ import torch
 import torch.utils.model_zoo as model_zoo
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 """
     Reference:
@@ -9,6 +10,10 @@ import torch.nn.functional as F
         [2] Yu, Fisher , and V. Koltun . "Multi-Scale Context Aggregation by Dilated Convolutions." (2015).
         [3] Yu, Fisher , V. Koltun , and T. Funkhouser . "Dilated Residual Networks." 2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR) IEEE Computer Society, 2017.
 """
+
+net_structures = {50: [3, 4, 6, 3],
+                  101: [3, 4, 23, 3],
+                  152: [3, 8, 36, 3]}
 
 def conv3x3(in_channel, out_channel, stride=1):
     """ 3x3 convolution layer """
@@ -97,8 +102,14 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, pretrained=False, nbr_classes=1000, is_bottleneck = True, nbr_layers=50):
+    def __init__(self, nbr_classes=1000, is_bottleneck = True, nbr_layers=50):
         super(ResNet, self).__init__()
+        global net_structures
+
+        if nbr_layers not in net_structures:
+            raise RuntimeError("nbr_layers can only be 50, 101 or 152, but got {}".format(nbr_layers))
+        net_structure = net_structures[nbr_layers]
+
         self.head = nn.Sequential(
             conv3x3(3, 64, stride=2),
             nn.BatchNorm2d(64),
@@ -111,13 +122,32 @@ class ResNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
-        net_structures = {50: [3, 4, 6, 3],
-                          101: [3, 4, 23, 3],
-                          152: [3, 8, 36, 3]}
+
         residual_block = Bottleneck if is_bottleneck else BasicBlock
-        self.block_1 = self._make_layers(residual_block, 128, 64, )
+        self.block_1 = self._make_layers(residual_block, 128, 64, net_structure[0])
+        self.block_2 = self._make_layers(residual_block, 64 * residual_block.expansion, 128, net_structure[1], stride=2)
+        self.block_3 = self._make_layers(residual_block, 128 * residual_block.expansion, 256, net_structure[2], dilation=2)
+        self.block_4 = self._make_layers(residual_block, 256 * residual_block.expansion, 512, net_structure[3], dilation=4)
 
+        self.fc = nn.Linear(512 * residual_block.expansion, nbr_classes)
 
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def forward(self, x):
+        x = self.head(x)
+        x = self.block_1(x)
+        x = self.block_2(x)
+        x = self.block_3(x)
+        x = self.block_4(x)
+        x = F.adaptive_avg_pool2d(x, 1).view(x.size(0), -1)
+        x = self.fc(x)
+        return x
 
     def _make_layers(self, block, in_channel, out_channel, nbr_blocks, stride=1, dilation=1):
         downsample = None
@@ -133,11 +163,12 @@ class ResNet(nn.Module):
         in_channel = out_channel * block.expansion
 
         for _ in range(1, nbr_blocks):
-            layers.append(block(in_channel, out_channel, stride=stride, dilation=dilation))
+            layers.append(block(in_channel, out_channel, dilation=dilation))
 
         return nn.Sequential(*layers)
 
-
-
-
-
+if __name__ == '__main__':
+    net = ResNet(nbr_classes=150)
+    net.load_state_dict(torch.load(
+        '/home/zhaopeng/.encoding/models/resnet50-25c4b509.pth'), strict=False)
+    print(net)
