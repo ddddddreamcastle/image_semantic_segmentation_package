@@ -111,8 +111,11 @@ class ResNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
+        net_structures = {50: [3, 4, 6, 3],
+                          101: [3, 4, 23, 3],
+                          152: [3, 8, 36, 3]}
         residual_block = Bottleneck if is_bottleneck else BasicBlock
-        self.block_1 = self._make_layers(residual_block, )
+        self.block_1 = self._make_layers(residual_block, 128, 64, )
 
 
 
