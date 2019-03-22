@@ -1,5 +1,4 @@
 import torch
-import torch.utils.model_zoo as model_zoo
 import torch.nn as nn
 import torch.nn.functional as F
 import math
@@ -166,9 +165,3 @@ class ResNet(nn.Module):
             layers.append(block(in_channel, out_channel, dilation=dilation))
 
         return nn.Sequential(*layers)
-
-if __name__ == '__main__':
-    net = ResNet(nbr_classes=150)
-    net.load_state_dict(torch.load(
-        '/home/zhaopeng/.encoding/models/resnet50-25c4b509.pth'), strict=False)
-    print(net)
