@@ -48,10 +48,6 @@ class PSPCore(nn.Module):
         )
 
 
-
-
-
-
 class PSPNet(nn.Module):
     def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50'):
         super(PSPNet, self).__init__()
