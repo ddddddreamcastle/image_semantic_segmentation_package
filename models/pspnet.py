@@ -47,6 +47,9 @@ class PSPCore(nn.Module):
             nn.Conv2d(tail_channel, out_channels, kernel_size=1, stride=1)
         )
 
+    def forward(self, x):
+        pass
+
 
 class PSPNet(nn.Module):
     def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50'):
