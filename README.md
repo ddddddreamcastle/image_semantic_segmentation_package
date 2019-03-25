@@ -8,6 +8,7 @@ A image semantic segmentation toolbox contains some common semantic segmentation
   2. Python >= 3.6
 
 ### Further Work
+
 - [ ] PSPNet
 - [ ] Deeplabv3
 - [ ] RefineNet
