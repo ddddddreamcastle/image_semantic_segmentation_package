@@ -63,7 +63,7 @@ class PSPCore(nn.Module):
 
 
 class PSPNet(nn.Module):
-    def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50'):
+    def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50', **kwargs):
         super(PSPNet, self).__init__()
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.deep_supervision = deep_supervision
@@ -89,10 +89,12 @@ class PSPNet(nn.Module):
             return x, aux
         return x
 
-def get_pspnet(backone='resnet50', pretrained=True, deep_supervision=True, weights_path=None):
-    psp = PSPNet(150, deep_supervision, backone)
-    if pretrained:
-        psp.load_state_dict(torch.load(weights_path), strict=False)
+def get_pspnet(backbone='resnet50', model_pretrained=True, supervision=True,
+               model_pretrain_path=None, **kwargs):
+
+    psp = PSPNet(150, supervision, backbone, **kwargs)
+    if model_pretrained:
+        psp.load_state_dict(torch.load(model_pretrain_path), strict=False)
     return psp
 
 if __name__ == '__main__':
