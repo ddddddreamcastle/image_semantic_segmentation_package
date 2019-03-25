@@ -7,7 +7,7 @@ A image semantic segmentation toolbox contains some common semantic segmentation
   1. pytorch >= 1.0.0
   2. Python >= 3.6
 
-### Further Work
+### TODO
 
 - [ ] PSPNet
 - [ ] Deeplabv3
