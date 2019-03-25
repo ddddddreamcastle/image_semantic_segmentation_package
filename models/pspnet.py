@@ -1,5 +1,7 @@
 import torch.nn as nn
 from backbone import get_backbone
+from torch.nn import functional as F
+import torch
 
 """
     Reference:
@@ -43,12 +45,21 @@ class PSPCore(nn.Module):
             nn.Conv2d(in_channels*2, tail_channel, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(tail_channel),
             nn.ReLU(True),
-            nn.Dropout(0.1, True),
+            nn.Dropout(0.1, False),
             nn.Conv2d(tail_channel, out_channels, kernel_size=1, stride=1)
         )
 
+        self.up_method = {'mode': 'bilinear', 'align_corners': True}
+
     def forward(self, x):
-        pass
+        _, _, h, w = x.size()
+        branch1 = F.interpolate(self.branch_1(x), (h, w), **self.up_method)
+        branch2 = F.interpolate(self.branch_2(x), (h, w), **self.up_method)
+        branch3 = F.interpolate(self.branch_3(x), (h, w), **self.up_method)
+        branch6 = F.interpolate(self.branch_6(x), (h, w), **self.up_method)
+        x = torch.cat((x, branch1, branch2, branch3, branch6), 1)
+        return self.tail(x)
+
 
 
 class PSPNet(nn.Module):
@@ -56,6 +67,8 @@ class PSPNet(nn.Module):
         super(PSPNet, self).__init__()
         self.backbone = get_backbone(backbone, pretrained=True)
         self.psp_core = PSPCore(in_channels=2048, out_channels=nbr_classes)
+        if deep_supervision:
+            self.aux =
 
 def get_pspnet(backone='resnet50', pretrained=True):
     psp = PSPNet(150)
