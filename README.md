@@ -1,4 +1,4 @@
-# image_semantic_segment_package
+# image semantic segmentation package
 
 A image semantic segmentation toolbox contains some common semantic segmentation algorithms. The code is implemented by Pytorch.
 
