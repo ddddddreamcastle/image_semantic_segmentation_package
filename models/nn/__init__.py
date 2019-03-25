@@ -1,6 +1,6 @@
 from .pspnet import get_pspnet
 
-def get_model(name, **kwargs):
+def get_model(name, kwargs):
     models = {
         'pspnet': get_pspnet
     }
