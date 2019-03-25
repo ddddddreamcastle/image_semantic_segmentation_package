@@ -5,7 +5,7 @@ A image semantic segmentation toolbox contains some common semantic segmentation
 ### Requires
 
   1. pytorch >= 1.0.0
-  2. Python >= 3.6
+  2. python >= 3.6
 
 ### TODO
 
