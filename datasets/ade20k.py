@@ -75,6 +75,30 @@ class ADE20K(data.Dataset):
             img = iaa.Flipud(1.0).augment_image(img)
             mask = iaa.Flipud(1.0).augment_image(mask)
 
+        # random resize
+        resize_rate = random.random() * (2 - 0.5) + 0.5
+        h, w = img.shape
+        if h > w:
+            img = iaa.Resize({"height": int(self.image_size * resize_rate), "width": "keep-aspect-ratio"},
+                             interpolation='linear').augment_image(img)
+            mask = iaa.Resize({"height": int(self.image_size * resize_rate), "width": "keep-aspect-ratio"},
+                              interpolation='nearest').augment_image(mask)
+        else:
+            img = iaa.Resize({"height": "keep-aspect-ratio", "width": int(self.image_size * resize_rate)},
+                             interpolation='linear').augment_image(img)
+            mask = iaa.Resize({"height": "keep-aspect-ratio", "width": int(self.image_size * resize_rate)},
+                              interpolation='nearest').augment_image(mask)
+
+        # padding
+        h, w = img.shape
+        if min(h, w) < self.crop_size:
+            pad_h = max(self.crop_size - h, 0)
+            pad_w = max(self.crop_size - w, 0)
+            img = iaa.CropAndPad(px=(0, pad_w, pad_h, 0), pad_mode="constant", keep_size=False).augment_image(img)
+            mask = iaa.CropAndPad(px=(0, pad_w, pad_h, 0), pad_mode="constant", keep_size=False).augment_image(mask)
+
+        # crop
+        h, w = img.shape
 
 
         return img, mask
