@@ -7,12 +7,11 @@ import imageio
 import random
 
 class ADE20K(data.Dataset):
-    def __init__(self, mode='train', image_size=384, data_path='./data/', dataloader_workers=4):
+    def __init__(self, mode='train', image_size=384, data_path='./data/'):
         self.mode = mode
         self.mean = [0.485, 0.456, 0.406]
         self.std = [0.229, 0.224, 0.225]
         self.data_path = data_path
-        self.workers = dataloader_workers
         self.image_size = image_size * 1.083
         self.crop_size = image_size
         self.init_data()
@@ -70,10 +69,15 @@ class ADE20K(data.Dataset):
         if random.random() < 0.5:
             img = iaa.Fliplr(1.0).augment_images(img)
             mask = iaa.Fliplr(1.0).augment_images(mask)
+
         # random up-down flip
         if random.random() < 0.5:
             img = iaa.Flipud(1.0).augment_image(img)
             mask = iaa.Flipud(1.0).augment_image(mask)
+
+        # random gaussian blur
+        if random.random() < 0.5:
+            img = iaa.GaussianBlur(sigma=(0.0, 2.0)).augment_image(img)
 
         # random resize
         resize_rate = random.random() * (2 - 0.5) + 0.5
@@ -99,7 +103,16 @@ class ADE20K(data.Dataset):
 
         # crop
         h, w = img.shape
+        crop_w = random.randint(0, w - self.crop_size)
+        crop_h = random.randint(0, h - self.crop_size)
+        img = img[crop_h : crop_h + self.crop_size, crop_w : crop_w + self.crop_size, :]
+        mask = mask[crop_h : crop_h + self.crop_size, crop_w : crop_w + self.crop_size]
 
+        # random rotation
+        if random.random() < 0.5:
+            rotation_degree = random.randint(-10, 10)
+            img = iaa.Affine(rotate=rotation_degree).augment_image(img)
+            mask = iaa.Affine(rotate=rotation_degree, order=0).augment_image(mask)
 
         return img, mask
 
@@ -109,8 +122,8 @@ class ADE20K(data.Dataset):
         return new_img, lbl
 
 def train_loader_cubs(batch_size, num_workers=4, pin_memory=False, transform=True, shuffle=True):
-    return data.DataLoader(CHINESEFOODNET(transform=transform), batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+    return data.DataLoader(ADE20K(transform=transform), batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
 
 
 def test_loader_cubs(batch_size, num_workers=4, pin_memory=False, transform=True, shuffle=True):
-    return data.DataLoader(CHINESEFOODNET(mode='val', transform=transform), batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+    return data.DataLoader(ADE20K(mode='val', transform=transform), batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
