@@ -66,6 +66,35 @@ class ADE20K(data.Dataset):
         img = imageio.imread(self.images[index])
         mask = imageio.imread(self.masks[index])
 
+        if self.mode == 'train':
+            img, mask = self.__preprocessing_for_train(img, mask)
+        elif self.mode == 'val':
+            img, mask = self.__preprocessing_for_validation(img, mask)
+
+        return self.im_transform(img), self.__mask_transform(mask)
+
+    def __preprocessing_for_validation(self, img, mask):
+        h, w = img.shape
+        if h > w:
+            img = iaa.Resize({"height": "keep-aspect-ratio", "width": self.crop_size},
+                             interpolation='linear').augment_image(img)
+            mask = iaa.Resize({"height": "keep-aspect-ratio", "width": self.crop_size},
+                              interpolation='nearest').augment_image(mask)
+        else:
+            img = iaa.Resize({"height": self.crop_size, "width": "keep-aspect-ratio"},
+                             interpolation='linear').augment_image(img)
+            mask = iaa.Resize({"height": self.crop_size, "width": "keep-aspect-ratio"},
+                              interpolation='nearest').augment_image(mask)
+
+        h, w = img.shape
+        x = int((w - self.crop_size) // 2)
+        y = int((h - self.crop_size) // 2)
+        img = img[y: y + self.crop_size, x: x + self.crop_size, :]
+        mask = mask[y: y + self.crop_size, x: x + self.crop_size]
+
+        return img, mask
+
+    def __preprocessing_for_train(self, img, mask):
         # random left-right flip
         if random.random() < 0.5:
             img = iaa.Fliplr(1.0).augment_images(img)
@@ -106,8 +135,8 @@ class ADE20K(data.Dataset):
         h, w = img.shape
         crop_w = random.randint(0, w - self.crop_size)
         crop_h = random.randint(0, h - self.crop_size)
-        img = img[crop_h : crop_h + self.crop_size, crop_w : crop_w + self.crop_size, :]
-        mask = mask[crop_h : crop_h + self.crop_size, crop_w : crop_w + self.crop_size]
+        img = img[crop_h: crop_h + self.crop_size, crop_w: crop_w + self.crop_size, :]
+        mask = mask[crop_h: crop_h + self.crop_size, crop_w: crop_w + self.crop_size]
 
         # random rotation
         if random.random() < 0.5:
@@ -115,9 +144,9 @@ class ADE20K(data.Dataset):
             img = iaa.Affine(rotate=rotation_degree).augment_image(img)
             mask = iaa.Affine(rotate=rotation_degree, order=0).augment_image(mask)
 
-        return self.im_transform(img), self._mask_transform(mask)
+        return img, mask
 
-    def _mask_transform(self, mask):
+    def __mask_transform(self, mask):
         target = np.array(mask).astype('int32') - 1
         return torch.from_numpy(target)
 
