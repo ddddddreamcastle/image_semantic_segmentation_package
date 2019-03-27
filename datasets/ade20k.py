@@ -120,12 +120,12 @@ class ADE20K(data.Dataset):
         return new_img, lbl
 
 def train_loader_ade20k(data_path='./data/', image_size=384, batch_size=8, num_workers=4, pin_memory=False,
-                        shuffle=True):
+                        shuffle=True, **kwargs):
     return data.DataLoader(ADE20K(mode='train', image_size=image_size, data_path=data_path), batch_size=batch_size,
                            shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
 
 
 def val_loader_ade20k(data_path='./data/', image_size=384, batch_size=8, num_workers=4, pin_memory=False,
-                      shuffle=True):
+                      shuffle=True, **kwargs):
     return data.DataLoader(ADE20K(mode='val', image_size=image_size, data_path=data_path), batch_size=batch_size,
                            shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
