@@ -1,6 +1,6 @@
 from .ade20k import train_loader_ade20k, val_loader_ade20k
 
-def get_train_val_dataset(name, **kwargs):
+def get_train_val_dataset(name, kwargs):
     """
     return a tuple (train_loader, val_loader)
     :param name: data set name
