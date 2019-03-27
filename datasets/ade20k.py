@@ -1,7 +1,6 @@
 import torch.utils.data as data
 import torchvision.transforms as transforms
 import os
-import imgaug
 from imgaug import augmenters as iaa
 import imageio
 import random
@@ -116,14 +115,17 @@ class ADE20K(data.Dataset):
 
         return img, mask
 
-
     def transform(self, img, lbl):
         new_img = self.im_transform(img)
         return new_img, lbl
 
-def train_loader_cubs(batch_size, num_workers=4, pin_memory=False, transform=True, shuffle=True):
-    return data.DataLoader(ADE20K(transform=transform), batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+def train_loader_ade20k(data_path='./data/', image_size=384, batch_size=8, num_workers=4, pin_memory=False,
+                        shuffle=True):
+    return data.DataLoader(ADE20K(mode='train', image_size=image_size, data_path=data_path), batch_size=batch_size,
+                           shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
 
 
-def test_loader_cubs(batch_size, num_workers=4, pin_memory=False, transform=True, shuffle=True):
-    return data.DataLoader(ADE20K(mode='val', transform=transform), batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+def val_loader_ade20k(data_path='./data/', image_size=384, batch_size=8, num_workers=4, pin_memory=False,
+                      shuffle=True):
+    return data.DataLoader(ADE20K(mode='val', image_size=image_size, data_path=data_path), batch_size=batch_size,
+                           shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
