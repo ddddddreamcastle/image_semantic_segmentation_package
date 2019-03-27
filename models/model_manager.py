@@ -7,6 +7,7 @@ from utils.learning_rate_scheduler import LearningRateScheduler
 from tqdm import tqdm
 
 class Manager(object):
+
     def __init__(self, args):
         kwargs = vars(args)
         self.epochs = args.epochs
@@ -42,19 +43,47 @@ class Manager(object):
             self.start_epoch = checkpoint['start_epoch']
             print("checkpoint loaded successfully")
 
-
-    def __do_batch(self):
-        pass
-
     def __do_epoch(self, epoch):
-        pass
+        train_loss = 0
+        tqdm_bar = tqdm(self.train_loader)
+        for i, (image, target) in enumerate(tqdm_bar):
+            cur_lr = self.lr_scheduler.adjust_learning_rate(self.optimizer, i, epoch)
+            self.optimizer.zero_grad()
+            if torch.cuda.is_available():
+                image = image.cuda()
+                target = target.cuda()
+            preds = self.model(image)
+            loss = self.criterion(preds, target)
+            loss.backward()
+            self.optimizer.step()
+            train_loss += loss.item()
+            tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.4}'.format(cur_lr, train_loss/(i+1)))
+
+    def __do_validation(self):
+        tqdm_bar = tqdm(self.val_loader)
+        for i, (image, target) in enumerate(tqdm_bar):
+            if torch.cuda.is_available():
+                image = image.cuda()
+                target = target.cuda()
+            pred = self.model(image)[0]
+            
+
+
+
 
     def fit(self):
 
         for epoch in self.epochs:
-            self.model.train()
             print('Epoch : {}'.format(epoch + 1))
-            self.__do_epoch(epoch + 1)
+            # train step
+            self.model.train()
+            self.__do_epoch(epoch)
+
+            # val step
+            self.model.eval()
+            with torch.no_grad():
+                self.__do_validation()
+
 
 
     def predict(self):
