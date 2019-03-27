@@ -23,8 +23,17 @@ class SegmentationErrorMeter(object):
         if torch.is_tensor(target):
             target = target.cpu().squeeze().numpy().astype('int32') + 1
         correct, labeled = batch_pixel_accuracy(output, target)
+        inter, union = batch_intersection_union(output, target, self.nbr_classes)
         self.total_correct += correct
         self.total_labeled += target
+        self.total_inter += inter
+        self.total_union += union
+
+    def value(self):
+        pixAcc = 1.0 * self.total_correct / (np.spacing(1) + self.total_label)
+        IoU = 1.0 * self.total_inter / (np.spacing(1) + self.total_union)
+        mIoU = IoU.mean()
+        return pixAcc, mIoU
 
 def batch_pixel_accuracy(output, target):
     output = np.argmax(output, axis=1) + 1
