@@ -38,5 +38,6 @@ def batch_intersection_union(output, target, nbr_classes):
     intersection = output * (output == target)
     area_inter, _ = np.histogram(intersection, bins=nbr_classes, range=(1, nbr_classes))
     area_pred, _ = np.histogram(output, bins=nbr_classes, range=(1, nbr_classes))
-    area_lab, _ = np.histogram(target, bins=nbr_classes, range=(1, nbr_classes))
-
+    area_label, _ = np.histogram(target, bins=nbr_classes, range=(1, nbr_classes))
+    area_union = area_pred + area_label - area_inter
+    return area_inter, area_union
