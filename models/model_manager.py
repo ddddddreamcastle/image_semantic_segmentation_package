@@ -1,6 +1,8 @@
 from models.nn import get_model
 from datasets import get_train_val_dataset
 import torch
+from loss import SegmentationLoss
+from torch import nn
 
 class Manager(object):
     def __init__(self, args):
@@ -13,7 +15,12 @@ class Manager(object):
         self.optimizer = torch.optim.Adam(parameters, lr=args.lr,
                                           weight_decay=args.weight_decay)
 
-        self.loss =
+        if args.supervision:
+            self.loss = SegmentationLoss((nn.CrossEntropyLoss, nn.CrossEntropyLoss),
+                                     (1, args.supervision_weight))
+        else:
+            self.loss = SegmentationLoss((nn.CrossEntropyLoss, ),
+                                         (1, ))
 
     def __do_batch(self):
         pass
