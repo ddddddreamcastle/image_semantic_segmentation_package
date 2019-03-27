@@ -68,7 +68,7 @@ class PSPNet(nn.Module):
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.deep_supervision = deep_supervision
         self.backbone = get_backbone(backbone, pretrained=True, aux=True)
-        self.psp_core = PSPCore(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method)
+        self.core = PSPCore(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method)
         if deep_supervision:
             self.aux_branch = nn.Sequential(
                 nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
@@ -78,10 +78,21 @@ class PSPNet(nn.Module):
                 nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
             )
 
+    def get_parameters_as_groups(self, lr, different_lr_in_layers=True):
+        parameters = []
+        if different_lr_in_layers:
+            parameters.append({'params': self.backbone.parameters(), 'lr':lr})
+            parameters.append({'params': self.core.parameters(), 'lr':lr*10})
+            if self.deep_supervision:
+                parameters.append({'params': self.aux_branch.parameters(), 'lr': lr * 10})
+        else:
+            return [{'params': self.parameters(), 'lr': lr }]
+
+
     def forward(self, x):
         _, _, h, w = x.size()
         x, aux = self.backbone(x)
-        x = self.psp_core(x)
+        x = self.core(x)
         x = F.interpolate(x, (h, w), **self.up_method)
         if self.deep_supervision:
             aux = self.aux_branch(aux)
@@ -96,8 +107,3 @@ def get_pspnet(backbone='resnet50', model_pretrained=True, supervision=True,
     if model_pretrained:
         psp.load_state_dict(torch.load(model_pretrain_path), strict=False)
     return psp
-
-if __name__ == '__main__':
-    psp = get_pspnet()
-    for name, f in psp.backbone.named_parameters():
-        print(name)
