@@ -4,6 +4,8 @@ import os
 from imgaug import augmenters as iaa
 import imageio
 import random
+import numpy as np
+import torch
 
 class ADE20K(data.Dataset):
     def __init__(self, mode='train', image_size=384, data_path='./data/'):
@@ -113,11 +115,11 @@ class ADE20K(data.Dataset):
             img = iaa.Affine(rotate=rotation_degree).augment_image(img)
             mask = iaa.Affine(rotate=rotation_degree, order=0).augment_image(mask)
 
-        return img, mask
+        return self.im_transform(img), self._mask_transform(mask)
 
-    def transform(self, img, lbl):
-        new_img = self.im_transform(img)
-        return new_img, lbl
+    def _mask_transform(self, mask):
+        target = np.array(mask).astype('int32') - 1
+        return torch.from_numpy(target)
 
 def train_loader_ade20k(data_path='./data/', image_size=384, batch_size=8, num_workers=4, pin_memory=False,
                         shuffle=True, **kwargs):
