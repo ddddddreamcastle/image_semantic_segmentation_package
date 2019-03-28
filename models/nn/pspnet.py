@@ -2,6 +2,7 @@ import torch.nn as nn
 from backbone import get_backbone
 from torch.nn import functional as F
 import torch
+from datasets import datasets
 
 """
     Reference:
@@ -65,6 +66,7 @@ class PSPCore(nn.Module):
 class PSPNet(nn.Module):
     def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50', **kwargs):
         super(PSPNet, self).__init__()
+        self.nbr_classes = nbr_classes
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.deep_supervision = deep_supervision
         self.backbone = get_backbone(backbone, pretrained=True, aux=True)
@@ -101,9 +103,9 @@ class PSPNet(nn.Module):
         return x
 
 def get_pspnet(backbone='resnet50', model_pretrained=True, supervision=True,
-               model_pretrain_path=None, **kwargs):
-
-    psp = PSPNet(150, supervision, backbone, **kwargs)
+               model_pretrain_path=None, dataset='ade20k', **kwargs):
+    nbr_classes = datasets[dataset].NBR_CLASSES
+    psp = PSPNet(nbr_classes, supervision, backbone, **kwargs)
     if model_pretrained:
         psp.load_state_dict(torch.load(model_pretrain_path), strict=False)
     return psp
