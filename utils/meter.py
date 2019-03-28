@@ -38,9 +38,17 @@ class SegmentationErrorMeter(object):
         return tuple(return_values)
 
     def __batch_pixel_accuracy(self, output, target):
-        output = np.argmax(output, axis=1) + 1
-        pixel_labeled = np.sum(target > 0)
-        pixel_correct = np.sum((output == target) * (target > 0))
+
+        # without background
+        # output = np.argmax(output, axis=1) + 1
+        # pixel_labeled = np.sum(target > 0)
+        # pixel_correct = np.sum((output == target) * (target > 0))
+
+        # with background
+        output = np.argmax(output, axis=1)
+        pixel_labeled = np.sum(target > -1)
+        pixel_correct = np.sum((output == target))
+
         self.total_correct += pixel_correct
         self.total_labeled += pixel_labeled
 
@@ -48,12 +56,26 @@ class SegmentationErrorMeter(object):
         return 1.0 * self.total_correct / (np.spacing(1) + self.total_label)
 
     def __batch_intersection_union(self, output, target):
-        output = np.argmax(output, axis=1) + 1
-        output = output * (target > 0).astype('int32')
+        # without background
+        # output = np.argmax(output, axis=1) + 1
+        # output = output * (target > 0).astype('int32')
+
+        # with background
+        output = np.argmax(output, axis=1)
+        output = output * (target > -1).astype('int32')
+
         intersection = output * (output == target)
-        area_inter, _ = np.histogram(intersection, bins=self.nbr_classes, range=(1, self.nbr_classes))
-        area_pred, _ = np.histogram(output, bins=self.nbr_classes, range=(1, self.nbr_classes))
-        area_label, _ = np.histogram(target, bins=self.nbr_classes, range=(1, self.nbr_classes))
+
+        # without background
+        # area_inter, _ = np.histogram(intersection, bins=self.nbr_classes, range=(1, self.nbr_classes))
+        # area_pred, _ = np.histogram(output, bins=self.nbr_classes, range=(1, self.nbr_classes))
+        # area_label, _ = np.histogram(target, bins=self.nbr_classes, range=(1, self.nbr_classes))
+
+        # with background
+        area_inter, _ = np.histogram(intersection, bins=self.nbr_classes, range=(0, self.nbr_classes))
+        area_pred, _ = np.histogram(output, bins=self.nbr_classes, range=(0, self.nbr_classes))
+        area_label, _ = np.histogram(target, bins=self.nbr_classes, range=(0, self.nbr_classes))
+
         area_union = area_pred + area_label - area_inter
         self.total_inter += area_inter
         self.total_union += area_union
