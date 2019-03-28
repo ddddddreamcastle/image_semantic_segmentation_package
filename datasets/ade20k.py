@@ -9,7 +9,7 @@ import torch
 
 class ADE20K(data.Dataset):
 
-    NBR_CLASSES = 150
+    NBR_CLASSES = 151 # with background
     def __init__(self, mode='train', image_size=384, data_path='./data/'):
         self.mode = mode
         self.mean = [0.485, 0.456, 0.406]
@@ -79,12 +79,12 @@ class ADE20K(data.Dataset):
         h, w = img.shape
         if h > w:
             img = iaa.Resize({"height": "keep-aspect-ratio", "width": self.crop_size},
-                             interpolation='linear').augment_image(img)
+                             interpolation=1).augment_image(img)
             mask = iaa.Resize({"height": "keep-aspect-ratio", "width": self.crop_size},
                               interpolation='nearest').augment_image(mask)
         else:
             img = iaa.Resize({"height": self.crop_size, "width": "keep-aspect-ratio"},
-                             interpolation='linear').augment_image(img)
+                             interpolation=1).augment_image(img)
             mask = iaa.Resize({"height": self.crop_size, "width": "keep-aspect-ratio"},
                               interpolation='nearest').augment_image(mask)
 
@@ -116,12 +116,12 @@ class ADE20K(data.Dataset):
         h, w = img.shape
         if h > w:
             img = iaa.Resize({"height": int(self.image_size * resize_rate), "width": "keep-aspect-ratio"},
-                             interpolation='linear').augment_image(img)
+                             interpolation=1).augment_image(img)
             mask = iaa.Resize({"height": int(self.image_size * resize_rate), "width": "keep-aspect-ratio"},
                               interpolation='nearest').augment_image(mask)
         else:
             img = iaa.Resize({"height": "keep-aspect-ratio", "width": int(self.image_size * resize_rate)},
-                             interpolation='linear').augment_image(img)
+                             interpolation=1).augment_image(img)
             mask = iaa.Resize({"height": "keep-aspect-ratio", "width": int(self.image_size * resize_rate)},
                               interpolation='nearest').augment_image(mask)
 
