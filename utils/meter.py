@@ -31,11 +31,11 @@ class SegmentationErrorMeter(object):
         for m in self.metrics:
             self.metrics_library[m][0](output, target)
 
-    def value(self):
-        return_value = []
+    def values(self):
+        return_values = []
         for m in self.metrics:
-            return_value.append(self.metrics_library[m][1]())
-        return tuple(return_value)
+            return_values.append(self.metrics_library[m][1]())
+        return tuple(return_values)
 
     def __batch_pixel_accuracy(self, output, target):
         output = np.argmax(output, axis=1) + 1
