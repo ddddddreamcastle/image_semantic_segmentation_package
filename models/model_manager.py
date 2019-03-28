@@ -5,6 +5,7 @@ from loss import SegmentationLoss
 from torch import nn
 from utils.learning_rate_scheduler import LearningRateScheduler
 from tqdm import tqdm
+from utils.meter import SegmentationErrorMeter
 
 class Manager(object):
 
