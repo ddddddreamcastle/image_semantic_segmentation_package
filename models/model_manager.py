@@ -1,19 +1,20 @@
 from models.nn import get_model
-from datasets import get_train_val_dataset
+from datasets import get_train_val_loader
 import torch
 from loss import SegmentationLoss
 from torch import nn
 from utils.learning_rate_scheduler import LearningRateScheduler
 from tqdm import tqdm
 from utils.meter import SegmentationErrorMeter
+from utils.recorder import save_checkpoint
 
 class Manager(object):
 
     def __init__(self, args):
-        kwargs = vars(args)
+        self.kwargs = vars(args)
         self.epochs = args.epochs
-        self.model = get_model(name=args.model, kwargs=kwargs)
-        self.train_loader, self.val_loader = get_train_val_dataset('ade20k', kwargs)
+        self.model = get_model(name=args.model, kwargs=self.kwargs)
+        self.train_loader, self.val_loader = get_train_val_loader(args.dataset, **self.kwargs)
 
         parameters = self.model.get_parameters_as_groups(args.lr)
 
@@ -47,6 +48,7 @@ class Manager(object):
     def __do_epoch(self, epoch):
         train_loss = 0
         tqdm_bar = tqdm(self.train_loader)
+        meter = SegmentationErrorMeter(['pixAcc', 'mIoU'], self.model.nbr_classes)
         for i, (image, target) in enumerate(tqdm_bar):
             cur_lr = self.lr_scheduler.adjust_learning_rate(self.optimizer, i, epoch)
             self.optimizer.zero_grad()
@@ -54,23 +56,34 @@ class Manager(object):
                 image = image.cuda()
                 target = target.cuda()
             preds = self.model(image)
+            meter.add(preds[0], target)
+            pixAcc, mIoU = meter.values()
             loss = self.criterion(preds, target)
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
-            tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.4}'.format(cur_lr, train_loss/(i+1)))
+            tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.3}, Train pixAcc: {:.3}, Train mIoU: {:.3}'
+                                     .format(cur_lr, train_loss/(i+1), pixAcc, mIoU))
 
-    def __do_validation(self):
+    def __do_validation(self, epoch):
         tqdm_bar = tqdm(self.val_loader)
+        meter = SegmentationErrorMeter(['pixAcc', 'mIoU'], self.model.nbr_classes)
+        pixAcc, mIoU = 0, 0
         for i, (image, target) in enumerate(tqdm_bar):
             if torch.cuda.is_available():
                 image = image.cuda()
                 target = target.cuda()
             pred = self.model(image)[0]
-            
-
-
-
+            meter.add(pred, target)
+            pixAcc, mIoU = meter.values()
+            tqdm_bar.set_description('pixAcc: {:.3}, mIoU: {:.3}'.format(pixAcc, mIoU))
+        performance = (pixAcc + mIoU)/2
+        is_best = False
+        if performance > self.best_performance:
+            self.best_performance = performance
+            is_best = True
+        save_checkpoint(weights=self.model.state_dict(), epoch=epoch,
+                        best_performance=self.best_performance, is_best=is_best, **self.kwargs)
 
     def fit(self):
 
@@ -83,7 +96,7 @@ class Manager(object):
             # val step
             self.model.eval()
             with torch.no_grad():
-                self.__do_validation()
+                self.__do_validation(epoch)
 
 
 
