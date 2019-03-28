@@ -7,6 +7,10 @@ from utils.learning_rate_scheduler import LearningRateScheduler
 from tqdm import tqdm
 from utils.meter import SegmentationErrorMeter
 from utils.recorder import save_checkpoint
+import os
+from PIL import Image
+import torchvision.transforms as transforms
+import numpy as np
 
 class Manager(object):
 
@@ -86,7 +90,6 @@ class Manager(object):
                         best_performance=self.best_performance, is_best=is_best, **self.kwargs)
 
     def fit(self):
-
         for epoch in self.epochs:
             print('Epoch : {}'.format(epoch + 1))
             # train step
@@ -98,7 +101,28 @@ class Manager(object):
             with torch.no_grad():
                 self.__do_validation(epoch)
 
+    def predict(self, path):
+        def preprocessing(img):
+            ori = img.resize((self.kwargs['image_size'], self.kwargs['image_size']), Image.BILINEAR)
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                )
+            ])
+            return ori, transform(ori)
+
+        def color(ori, pred):
+            cm = np.argmax(pred, axis=0)
+            color_cm = utils.add_color(cm, 150)
+            return img
+
+        self.model.eval()
+        if os.path.isfile(path):
+            img = Image.open(path)
+            ori, img = preprocessing(img)
+            pred = self.model(img)
 
 
-    def predict(self):
-        pass
+
+
