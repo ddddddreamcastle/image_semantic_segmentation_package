@@ -29,13 +29,13 @@ class ADE20K(data.Dataset):
         img_paths = []
         mask_paths = []
         for filename in os.listdir(img_folder):
-            base_filename = os.path.splitext(filename)
+            base_filename, _ = os.path.splitext(filename)
             mask_filename = '{}.png'.format(base_filename)
             if os.path.isfile(os.path.join(mask_folder, mask_filename)):
                 img_paths.append(os.path.join(img_folder, filename))
                 mask_paths.append(os.path.join(mask_folder, mask_filename))
             else:
-                raise RuntimeError('cannot find the mask image for {}'.format(filename))
+                raise RuntimeError('cannot find the mask image for {}'.format(mask_filename))
         return img_paths, mask_paths
 
     def init_data(self):
@@ -76,7 +76,7 @@ class ADE20K(data.Dataset):
         return self.im_transform(img), self.__mask_transform(mask)
 
     def __preprocessing_for_validation(self, img, mask):
-        h, w = img.shape
+        h, w, _ = img.shape
         if h > w:
             img = iaa.Resize({"height": "keep-aspect-ratio", "width": self.crop_size},
                              interpolation=1).augment_image(img)
@@ -88,7 +88,7 @@ class ADE20K(data.Dataset):
             mask = iaa.Resize({"height": self.crop_size, "width": "keep-aspect-ratio"},
                               interpolation='nearest').augment_image(mask)
 
-        h, w = img.shape
+        h, w, _ = img.shape
         x = int((w - self.crop_size) // 2)
         y = int((h - self.crop_size) // 2)
         img = img[y: y + self.crop_size, x: x + self.crop_size, :]
@@ -99,8 +99,8 @@ class ADE20K(data.Dataset):
     def __preprocessing_for_train(self, img, mask):
         # random left-right flip
         if random.random() < 0.5:
-            img = iaa.Fliplr(1.0).augment_images(img)
-            mask = iaa.Fliplr(1.0).augment_images(mask)
+            img = iaa.Fliplr(1.0).augment_image(img)
+            mask = iaa.Fliplr(1.0).augment_image(mask)
 
         # random up-down flip
         if random.random() < 0.5:
@@ -113,7 +113,7 @@ class ADE20K(data.Dataset):
 
         # random resize
         resize_rate = random.random() * (2 - 0.5) + 0.5
-        h, w = img.shape
+        h, w, _ = img.shape
         if h > w:
             img = iaa.Resize({"height": int(self.image_size * resize_rate), "width": "keep-aspect-ratio"},
                              interpolation=1).augment_image(img)
@@ -126,7 +126,7 @@ class ADE20K(data.Dataset):
                               interpolation='nearest').augment_image(mask)
 
         # padding
-        h, w = img.shape
+        h, w, _ = img.shape
         if min(h, w) < self.crop_size:
             pad_h = max(self.crop_size - h, 0)
             pad_w = max(self.crop_size - w, 0)
@@ -134,7 +134,7 @@ class ADE20K(data.Dataset):
             mask = iaa.CropAndPad(px=(0, pad_w, pad_h, 0), pad_mode="constant", keep_size=False).augment_image(mask)
 
         # crop
-        h, w = img.shape
+        h, w, _ = img.shape
         crop_w = random.randint(0, w - self.crop_size)
         crop_h = random.randint(0, h - self.crop_size)
         img = img[crop_h: crop_h + self.crop_size, crop_w: crop_w + self.crop_size, :]
@@ -149,5 +149,5 @@ class ADE20K(data.Dataset):
         return img, mask
 
     def __mask_transform(self, mask):
-        target = np.array(mask).astype('int32') - 1
+        target = np.array(mask).astype('int64')
         return torch.from_numpy(target)
