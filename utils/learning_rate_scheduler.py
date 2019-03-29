@@ -49,3 +49,28 @@ class LearningRateScheduler(object):
             for i in range(1, len(optimizer.param_groups)):
                 optimizer.param_groups[i]['lr'] = lr * 10
         return lr
+
+# ref https://github.com/zhanghang1989/PyTorch-Encoding/blob/master/experiments/segmentation/option.py
+def lr_parse(args):
+    if args.epochs is None:
+        epoches = {
+            'coco': 30,
+            'pascal_aug': 80,
+            'pascal_voc': 50,
+            'pcontext': 80,
+            'ade20k': 180,
+            'citys': 240,
+        }
+        args.epochs = epoches[args.dataset.lower()]
+    if args.learning_rate is None:
+        lrs = {
+            'coco': 0.004,
+            'pascal_aug': 0.001,
+            'pascal_voc': 0.0001,
+            'pcontext': 0.001,
+            'ade20k': 0.004,
+            'citys': 0.004,
+        }
+        args.learning_rate = lrs[args.dataset.lower()] / 16 * args.batch_size
+    print(args)
+    return args
