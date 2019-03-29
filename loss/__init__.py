@@ -1,5 +1,5 @@
 from torch.nn.modules.loss import _Loss
-
+from torch import nn
 class SegmentationLoss(_Loss):
     def __init__(self, losses, weights):
         super(SegmentationLoss, self).__init__()
@@ -16,18 +16,16 @@ class SegmentationLoss(_Loss):
 
     def forward(self, inputs, target):
 
-        if not isinstance(inputs, tuple):
-            raise RuntimeError('`inputs` has to be of type tuple')
-        if not isinstance(target, tuple):
-            raise RuntimeError('`target` has to be of type tuple')
-        if len(inputs) != len(self.losses):
-            raise RuntimeError('the length of `losses` and `inputs` have to be equal')
-        if len(target) != 1 and len(target) != len(inputs):
-            raise RuntimeError('the length of `target` has to be 1 or equals the length of `inputs` ')
-
         loss = 0
-        for idx, pred in enumerate(inputs):
-            loss += self.weights[idx] * self.losses[idx](pred, target)
+        if not isinstance(inputs, tuple):
+            if isinstance(target, tuple):
+                raise RuntimeError('If input is an object, target cannot be a tuple')
+            loss = self.losses[0](inputs, target)
+        else:
+            for idx, pred in enumerate(inputs):
+                if not isinstance(target, tuple):
+                    loss += self.weights[idx] * self.losses[idx](pred, target)
+                else:
+                    loss += self.weights[idx] * self.losses[idx](pred, target[idx])
+
         return loss
-
-
