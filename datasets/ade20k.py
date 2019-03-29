@@ -1,11 +1,11 @@
 import torch.utils.data as data
 import torchvision.transforms as transforms
 import os
-from imgaug import augmenters as iaa
-import imageio
 import random
 import numpy as np
 import torch
+import multiprocessing
+from PIL import Image, ImageOps, ImageFilter
 
 class ADE20K(data.Dataset):
 
@@ -55,8 +55,7 @@ class ADE20K(data.Dataset):
             val_mask_folder = os.path.join(self.data_path, 'val/labels')
             val_img_paths, val_mask_paths = self.__get_pairs(val_img_folder, val_mask_folder)
             self.images = train_img_paths + val_img_paths
-            self.mass = train_mask_paths + val_mask_paths
-
+            self.masks = train_mask_paths + val_mask_paths
         if len(self.images) != len(self.masks):
             raise RuntimeError("the number of images and masks does not matching")
 
@@ -65,8 +64,8 @@ class ADE20K(data.Dataset):
 
     def __getitem__(self, index):
 
-        img = imageio.imread(self.images[index])
-        mask = imageio.imread(self.masks[index])
+        img = Image.open(self.images[index])
+        mask = Image.open(self.masks[index])
 
         if self.mode == 'train':
             img, mask = self.__preprocessing_for_train(img, mask)
@@ -76,75 +75,78 @@ class ADE20K(data.Dataset):
         return self.im_transform(img), self.__mask_transform(mask)
 
     def __preprocessing_for_validation(self, img, mask):
-        h, w, _ = img.shape
+        w, h = img.size
         if h > w:
-            img = iaa.Resize({"height": "keep-aspect-ratio", "width": self.crop_size},
-                             interpolation=1).augment_image(img)
-            mask = iaa.Resize({"height": "keep-aspect-ratio", "width": self.crop_size},
-                              interpolation='nearest').augment_image(mask)
+            rate = h / w
+            img = img.resize((self.crop_size, int(self.crop_size * rate)), Image.BILINEAR)
+            mask = mask.resize((self.crop_size, int(self.crop_size * rate)), Image.NEAREST)
         else:
-            img = iaa.Resize({"height": self.crop_size, "width": "keep-aspect-ratio"},
-                             interpolation=1).augment_image(img)
-            mask = iaa.Resize({"height": self.crop_size, "width": "keep-aspect-ratio"},
-                              interpolation='nearest').augment_image(mask)
+            rate = w / h
+            img = img.resize((int(self.crop_size * rate), self.crop_size), Image.BILINEAR)
+            mask = mask.resize((int(self.crop_size * rate), self.crop_size), Image.NEAREST)
 
-        h, w, _ = img.shape
+        w, h = img.size
         x = int((w - self.crop_size) // 2)
         y = int((h - self.crop_size) // 2)
-        img = img[y: y + self.crop_size, x: x + self.crop_size, :]
-        mask = mask[y: y + self.crop_size, x: x + self.crop_size]
+        img = img.crop((x, y, x + self.crop_size, y + self.crop_size))
+        mask = mask.crop((x, y, x + self.crop_size, y + self.crop_size))
 
         return img, mask
 
     def __preprocessing_for_train(self, img, mask):
         # random left-right flip
+        # print(multiprocessing.current_process().name, 1)
         if random.random() < 0.5:
-            img = iaa.Fliplr(1.0).augment_image(img)
-            mask = iaa.Fliplr(1.0).augment_image(mask)
+            img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
 
+        # print(multiprocessing.current_process().name, 2)
         # random up-down flip
         if random.random() < 0.5:
-            img = iaa.Flipud(1.0).augment_image(img)
-            mask = iaa.Flipud(1.0).augment_image(mask)
+            img = img.transpose(Image.FLIP_TOP_BOTTOM)
+            mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
 
         # random gaussian blur
+        # print(multiprocessing.current_process().name, 3)
         if random.random() < 0.5:
-            img = iaa.GaussianBlur(sigma=(0.0, 2.0)).augment_image(img)
+            img = img.filter(ImageFilter.GaussianBlur(radius=2.0))
 
         # random resize
-        resize_rate = random.random() * (2 - 0.5) + 0.5
-        h, w, _ = img.shape
+        # print(multiprocessing.current_process().name, 4)
+        long_size = int((random.random() * (2 - 0.5) + 0.5) * self.image_size)
+        w, h = img.size
         if h > w:
-            img = iaa.Resize({"height": int(self.image_size * resize_rate), "width": "keep-aspect-ratio"},
-                             interpolation=1).augment_image(img)
-            mask = iaa.Resize({"height": int(self.image_size * resize_rate), "width": "keep-aspect-ratio"},
-                              interpolation='nearest').augment_image(mask)
+            rate = h / w
+            img = img.resize((int(long_size / rate), long_size), Image.BILINEAR)
+            mask = mask.resize((int(long_size / rate), long_size), Image.NEAREST)
         else:
-            img = iaa.Resize({"height": "keep-aspect-ratio", "width": int(self.image_size * resize_rate)},
-                             interpolation=1).augment_image(img)
-            mask = iaa.Resize({"height": "keep-aspect-ratio", "width": int(self.image_size * resize_rate)},
-                              interpolation='nearest').augment_image(mask)
+            rate = w / h
+            img = img.resize((long_size, int(long_size / rate)), Image.BILINEAR)
+            mask = mask.resize((long_size, int(long_size / rate)), Image.NEAREST)
 
         # padding
-        h, w, _ = img.shape
+        # print(multiprocessing.current_process().name, 5)
+        w, h = img.size
         if min(h, w) < self.crop_size:
             pad_h = max(self.crop_size - h, 0)
             pad_w = max(self.crop_size - w, 0)
-            img = iaa.CropAndPad(px=(0, pad_w, pad_h, 0), pad_mode="constant", keep_size=False).augment_image(img)
-            mask = iaa.CropAndPad(px=(0, pad_w, pad_h, 0), pad_mode="constant", keep_size=False).augment_image(mask)
+            img = ImageOps.expand(img, border=(0, 0, pad_w, pad_h), fill=0)
+            mask = ImageOps.expand(mask, border=(0, 0, pad_w, pad_h), fill=0)
 
         # crop
-        h, w, _ = img.shape
+        # print(multiprocessing.current_process().name, 6)
+        w, h = img.size
         crop_w = random.randint(0, w - self.crop_size)
         crop_h = random.randint(0, h - self.crop_size)
-        img = img[crop_h: crop_h + self.crop_size, crop_w: crop_w + self.crop_size, :]
-        mask = mask[crop_h: crop_h + self.crop_size, crop_w: crop_w + self.crop_size]
+        img = img.crop((crop_w, crop_h, crop_w + self.crop_size, crop_h + self.crop_size))
+        mask = mask.crop((crop_w, crop_h, crop_w + self.crop_size, crop_h + self.crop_size))
 
         # random rotation
+        # print(multiprocessing.current_process().name, 7)
         if random.random() < 0.5:
             rotation_degree = random.randint(-10, 10)
-            img = iaa.Affine(rotate=rotation_degree).augment_image(img)
-            mask = iaa.Affine(rotate=rotation_degree, order=0).augment_image(mask)
+            img = img.rotate(angle=rotation_degree, resample=Image.BILINEAR)
+            mask = mask.rotate(angle=rotation_degree, resample=Image.NEAREST)
 
         return img, mask
 
