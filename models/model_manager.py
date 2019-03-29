@@ -11,7 +11,7 @@ import os
 from PIL import Image
 import torchvision.transforms as transforms
 import numpy as np
-
+from utils.color import add_color
 class Manager(object):
 
     def __init__(self, args):
@@ -101,7 +101,7 @@ class Manager(object):
             with torch.no_grad():
                 self.__do_validation(epoch)
 
-    def predict(self, path):
+    def predict(self, path, output_path):
         def preprocessing(img):
             ori = img.resize((self.kwargs['image_size'], self.kwargs['image_size']), Image.BILINEAR)
             transform = transforms.Compose([
@@ -114,14 +114,27 @@ class Manager(object):
 
         def color(ori, pred):
             cm = np.argmax(pred, axis=0)
-            color_cm = utils.add_color(cm, 150)
+            color_cm = add_color(cm, self.model.nbr_classes)
+            img = 0.5 * ((color_cm * [0.229, 0.224, 0.225]) + [0.485, 0.456, 0.406])*255 + \
+                   0.5 * np.array(ori)
             return img
+
+        def single_image(filepath):
+            img = Image.open(filepath)
+            ori, img = preprocessing(img)
+            pred = self.model(img)
+            if self.model.deep_supervision:
+                pred = pred[0]
+            img = color(ori, pred)
+            filename = os.path.splitext(filepath[filepath.rfind('/'):])
+            Image.fromarray(img).save(os.path.join(output_path, "result_{}.jpg".format(filename)))
 
         self.model.eval()
         if os.path.isfile(path):
-            img = Image.open(path)
-            ori, img = preprocessing(img)
-            pred = self.model(img)
+            single_image(path)
+        else:
+            for src_filename in os.listdir(path):
+                single_image(os.path.join(path, src_filename))
 
 
 
