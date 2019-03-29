@@ -56,8 +56,10 @@ class Manager(object):
         tqdm_bar = tqdm(self.train_loader)
         meter = SegmentationErrorMeter(['pixAcc', 'mIoU'], self.model.nbr_classes)
         for i, (image, target) in enumerate(tqdm_bar):
+            print( torch.get_num_threads())
             cur_lr = self.lr_scheduler.adjust_learning_rate(self.optimizer, i, epoch)
             self.optimizer.zero_grad()
+            # target = torch.randint(0,100, (12, 96, 96)).long()
             if torch.cuda.is_available():
                 image = image.cuda()
                 target = target.cuda()
@@ -143,7 +145,4 @@ class Manager(object):
         else:
             for src_filename in os.listdir(path):
                 single_image(os.path.join(path, src_filename))
-
-
-
 
