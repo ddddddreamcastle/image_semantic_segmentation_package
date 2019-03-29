@@ -12,7 +12,7 @@ class SegmentationErrorMeter(object):
 
         self.metrics = metrics
         self.total_correct = 0
-        self.total_label = 0
+        self.total_labeled = 0
         self.total_inter = 0
         self.total_union = 0
         self.nbr_classes = nbr_classes
@@ -53,7 +53,7 @@ class SegmentationErrorMeter(object):
         self.total_labeled += pixel_labeled
 
     def __pixAcc(self):
-        return 1.0 * self.total_correct / (np.spacing(1) + self.total_label)
+        return 1.0 * self.total_correct / (np.spacing(1) + self.total_labeled)
 
     def __batch_intersection_union(self, output, target):
         # without background
@@ -62,7 +62,7 @@ class SegmentationErrorMeter(object):
 
         # with background
         output = np.argmax(output, axis=1)
-        output = output * (target > -1).astype('int32')
+        output = output.astype('int32')
 
         intersection = output * (output == target)
 
