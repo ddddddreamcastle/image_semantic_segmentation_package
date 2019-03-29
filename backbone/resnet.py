@@ -101,10 +101,9 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, nbr_classes=1000, is_bottleneck = True, nbr_layers=50, aux=False):
+    def __init__(self, nbr_classes=1000, is_bottleneck = True, nbr_layers=50):
         super(ResNet, self).__init__()
         global net_structures
-        self.aux = aux
         if nbr_layers not in net_structures:
             raise RuntimeError("nbr_layers can only be 50, 101 or 152, but got {}".format(nbr_layers))
         net_structure = net_structures[nbr_layers]
@@ -144,14 +143,9 @@ class ResNet(nn.Module):
         x = self.block_2(x)
         x = self.block_3(x)
         x = self.block_4(x)
-        aux = None
-        if self.aux:
-            aux = x.clone()
-        x = self.avgpool(x)
+        x = self.avg_pool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
-        if self.aux:
-            return x, aux
         return x
 
     def _make_layers(self, block, in_channel, out_channel, nbr_blocks, stride=1, dilation=1):
@@ -175,8 +169,8 @@ class ResNet(nn.Module):
 def get_resnet(nbr_layers=50):
     weights_name = {50: 'resnet50.pth'}
 
-    def build_net(nbr_classes=1000, is_bottleneck = True, pretrained=True, aux=False):
-        model = ResNet(nbr_classes, is_bottleneck, nbr_layers, aux)
+    def build_net(nbr_classes=1000, is_bottleneck = True, pretrained=True):
+        model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
         if pretrained:
             model.load_state_dict(torch.load('../weights/{}'.format(weights_name[nbr_layers])), strict=True)
         return model
