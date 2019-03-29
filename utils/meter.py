@@ -25,9 +25,9 @@ class SegmentationErrorMeter(object):
 
     def add(self, output, target):
         if torch.is_tensor(output):
-            output = output.cpu().squeeze().numpy()
+            output = output.detach().cpu().squeeze().numpy()
         if torch.is_tensor(target):
-            target = target.cpu().squeeze().numpy().astype('int32') + 1
+            target = target.detach().cpu().squeeze().numpy().astype('int32')
         for m in self.metrics:
             self.metrics_library[m][0](output, target)
 
