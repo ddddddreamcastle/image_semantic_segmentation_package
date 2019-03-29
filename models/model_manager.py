@@ -56,7 +56,6 @@ class Manager(object):
         tqdm_bar = tqdm(self.train_loader)
         meter = SegmentationErrorMeter(['pixAcc', 'mIoU'], self.model.nbr_classes)
         for i, (image, target) in enumerate(tqdm_bar):
-            print( torch.get_num_threads())
             cur_lr = self.lr_scheduler.adjust_learning_rate(self.optimizer, i, epoch)
             self.optimizer.zero_grad()
             # target = torch.randint(0,100, (12, 96, 96)).long()
@@ -68,13 +67,15 @@ class Manager(object):
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
-            pred = preds
-            if self.model.deep_supervision:
-                pred = preds[0]
-            meter.add(pred, target)
-            pixAcc, mIoU = meter.values()
-            tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.3}, Train pixAcc: {:.3}, Train mIoU: {:.3}'
-                                     .format(cur_lr, train_loss/(i+1), pixAcc, mIoU))
+            # pred = preds
+            # if self.model.deep_supervision:
+            #     pred = preds[0]
+            # meter.add(pred, target)
+            # pixAcc, mIoU = meter.values()
+            # tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.3}, Train pixAcc: {:.3}, Train mIoU: {:.3}'
+            #                          .format(cur_lr, train_loss/(i+1), pixAcc, mIoU))
+            tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.3}'
+                                     .format(cur_lr, train_loss/(i+1)))
 
     def __do_validation(self, epoch):
         tqdm_bar = tqdm(self.val_loader)
