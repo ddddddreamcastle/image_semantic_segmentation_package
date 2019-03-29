@@ -173,6 +173,7 @@ def get_resnet(nbr_layers=50):
         model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
         if pretrained:
             model.load_state_dict(torch.load('../weights/{}'.format(weights_name[nbr_layers])), strict=True)
+            print('resnet{} weights are loaded successfully'.format(nbr_layers))
         return model
 
     return build_net
