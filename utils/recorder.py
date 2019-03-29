@@ -1,7 +1,7 @@
 import torch
 import os
 def save_checkpoint(weights, epoch, best_performance, is_best, model, backbone,
-                    checkpoint_prefix_name, checkpoint_root_path):
+                    checkpoint_prefix_name, checkpoint_root_path, **kwargs):
     filename = '{}_{}_{}_{}.pt'.format(checkpoint_prefix_name,
                                         model,
                                         backbone,
