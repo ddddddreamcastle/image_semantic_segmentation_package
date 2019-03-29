@@ -69,7 +69,7 @@ class PSPNet(nn.Module):
         self.nbr_classes = nbr_classes
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.deep_supervision = deep_supervision
-        self.backbone = get_backbone(backbone, pretrained=True, aux=True)
+        self.backbone = get_backbone(backbone, pretrained=True)
         self.core = PSPCore(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method)
         if deep_supervision:
             self.aux_branch = nn.Sequential(
@@ -88,12 +88,24 @@ class PSPNet(nn.Module):
             if self.deep_supervision:
                 parameters.append({'params': self.aux_branch.parameters(), 'lr': lr * 10})
         else:
-            return [{'params': self.parameters(), 'lr': lr }]
+            parameters.append({'params': self.parameters(), 'lr': lr })
+        return parameters
 
 
     def forward(self, x):
         _, _, h, w = x.size()
-        x, aux = self.backbone(x)
+
+        x = self.backbone.head(x)
+        x = self.backbone.block_1(x)
+        x = self.backbone.block_2(x)
+        x = self.backbone.block_3(x)
+
+        aux = None
+        if self.deep_supervision:
+            aux = x.clone()
+
+        x = self.backbone.block_4(x)
+
         x = self.core(x)
         x = F.interpolate(x, (h, w), **self.up_method)
         if self.deep_supervision:
