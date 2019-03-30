@@ -58,7 +58,6 @@ class Manager(object):
         for i, (image, target) in enumerate(tqdm_bar):
             cur_lr = self.lr_scheduler.adjust_learning_rate(self.optimizer, i, epoch)
             self.optimizer.zero_grad()
-            # target = torch.randint(0,100, (12, 96, 96)).long()
             if torch.cuda.is_available():
                 image = image.cuda()
                 target = target.cuda()
@@ -67,13 +66,6 @@ class Manager(object):
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
-            # pred = preds
-            # if self.model.deep_supervision:
-            #     pred = preds[0]
-            # meter.add(pred, target)
-            # pixAcc, mIoU = meter.values()
-            # tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.3}, Train pixAcc: {:.3}, Train mIoU: {:.3}'
-            #                          .format(cur_lr, train_loss/(i+1), pixAcc, mIoU))
             tqdm_bar.set_description('Lr: {:.4}, Train loss: {:.3}'
                                      .format(cur_lr, train_loss/(i+1)))
 
