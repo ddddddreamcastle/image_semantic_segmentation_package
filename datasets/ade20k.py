@@ -4,7 +4,6 @@ import os
 import random
 import numpy as np
 import torch
-import multiprocessing
 from PIL import Image, ImageOps, ImageFilter
 
 class ADE20K(data.Dataset):
@@ -95,24 +94,20 @@ class ADE20K(data.Dataset):
 
     def __preprocessing_for_train(self, img, mask):
         # random left-right flip
-        # print(multiprocessing.current_process().name, 1)
         if random.random() < 0.5:
             img = img.transpose(Image.FLIP_LEFT_RIGHT)
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
 
-        # print(multiprocessing.current_process().name, 2)
         # random up-down flip
         if random.random() < 0.5:
             img = img.transpose(Image.FLIP_TOP_BOTTOM)
             mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
 
         # random gaussian blur
-        # print(multiprocessing.current_process().name, 3)
         if random.random() < 0.5:
             img = img.filter(ImageFilter.GaussianBlur(radius=2.0))
 
         # random resize
-        # print(multiprocessing.current_process().name, 4)
         long_size = int((random.random() * (2 - 0.5) + 0.5) * self.image_size)
         w, h = img.size
         if h > w:
@@ -125,7 +120,6 @@ class ADE20K(data.Dataset):
             mask = mask.resize((long_size, int(long_size / rate)), Image.NEAREST)
 
         # padding
-        # print(multiprocessing.current_process().name, 5)
         w, h = img.size
         if min(h, w) < self.crop_size:
             pad_h = max(self.crop_size - h, 0)
@@ -134,7 +128,6 @@ class ADE20K(data.Dataset):
             mask = ImageOps.expand(mask, border=(0, 0, pad_w, pad_h), fill=0)
 
         # crop
-        # print(multiprocessing.current_process().name, 6)
         w, h = img.size
         crop_w = random.randint(0, w - self.crop_size)
         crop_h = random.randint(0, h - self.crop_size)
@@ -142,7 +135,6 @@ class ADE20K(data.Dataset):
         mask = mask.crop((crop_w, crop_h, crop_w + self.crop_size, crop_h + self.crop_size))
 
         # random rotation
-        # print(multiprocessing.current_process().name, 7)
         if random.random() < 0.5:
             rotation_degree = random.randint(-10, 10)
             img = img.rotate(angle=rotation_degree, resample=Image.BILINEAR)
