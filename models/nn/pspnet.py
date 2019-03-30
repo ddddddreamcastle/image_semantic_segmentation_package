@@ -69,7 +69,7 @@ class PSPNet(nn.Module):
         self.nbr_classes = nbr_classes
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.deep_supervision = deep_supervision
-        self.backbone = get_backbone(backbone, pretrained=True)
+        self.backbone = get_backbone(backbone, pretrained=True, **kwargs)
         self.core = PSPCore(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method)
         if deep_supervision:
             self.aux_branch = nn.Sequential(
