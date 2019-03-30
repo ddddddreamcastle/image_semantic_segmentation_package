@@ -39,12 +39,6 @@ class SegmentationErrorMeter(object):
 
     def __batch_pixel_accuracy(self, output, target):
 
-        # without background
-        # output = np.argmax(output, axis=1) + 1
-        # pixel_labeled = np.sum(target > 0)
-        # pixel_correct = np.sum((output == target) * (target > 0))
-
-        # with background
         output = np.argmax(output, axis=1)
         pixel_labeled = np.sum(target > -1)
         pixel_correct = np.sum((output == target))
@@ -56,36 +50,20 @@ class SegmentationErrorMeter(object):
         return 1.0 * self.total_correct / (np.spacing(1) + self.total_labeled)
 
     def __batch_intersection_union(self, output, target):
-        # without background
-        # output = np.argmax(output, axis=1) + 1
-        # output = output * (target > 0).astype('int32')
 
-        # with background
         output = np.argmax(output, axis=1).astype('int32') + 1
         output = output * (output > 0)
         target = target + 1
 
         intersection = output * (output == target)
 
-        # without background
-        # area_inter, _ = np.histogram(intersection, bins=self.nbr_classes, range=(1, self.nbr_classes))
-        # area_pred, _ = np.histogram(output, bins=self.nbr_classes, range=(1, self.nbr_classes))
-        # area_label, _ = np.histogram(target, bins=self.nbr_classes, range=(1, self.nbr_classes))
-
-        # with background
         area_inter, _ = np.histogram(intersection, bins=self.nbr_classes, range=(1, self.nbr_classes+1))
         area_pred, _ = np.histogram(output, bins=self.nbr_classes, range=(1, self.nbr_classes+1))
         area_label, _ = np.histogram(target, bins=self.nbr_classes, range=(1, self.nbr_classes+1))
 
         area_union = area_pred + area_label - area_inter
-        # print(output, target, intersection, area_inter, len(area_inter),
-        #       area_pred, len(area_pred), area_label, len(area_label),area_union, len(area_union))
         self.total_inter += area_inter
         self.total_union += area_union
 
     def __mIoU(self):
         return (1.0 * self.total_inter / (np.spacing(1) + self.total_union)).mean()
-
-if __name__ == '__main__':
-    print(np.histogram([1,2,3,0,2,3,4,1,2,3,2,2,1,4,3,1,0,2,1,2,3], bins=5, range=(0, 5)))
-    print(np.histogram([1,2,3,0,2,3,4,1,2,3,2,2,1,4,3,1,0,2,1,2,3], bins=5, range=(1, 5+1)))
