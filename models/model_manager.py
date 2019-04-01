@@ -60,6 +60,7 @@ class Manager(object):
             self.optimizer.zero_grad()
             if torch.cuda.is_available():
                 image = image.cuda()
+                
                 target = target.cuda()
             preds = self.model(image)
             loss = self.criterion(preds, target)
