@@ -11,7 +11,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 ### TODO
 
 - [x] PSPNet
-- [x] Deeplabv3
+- [ ] Deeplabv3
 - [ ] RefineNet
 - [ ] FPN
 - [ ] LinkNet
