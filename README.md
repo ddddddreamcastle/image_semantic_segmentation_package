@@ -2,14 +2,14 @@
 
 A image semantic segmentation toolbox (single GPU) contains some common semantic segmentation algorithms. The code is implemented by Pytorch.
 
-### Requires
+## Requires
 
   1. pytorch >= 1.0.0
   2. python >= 3.6
   
-### Usage
+## Usage
 
-### Performance
+## Performance
 
 
 
@@ -32,7 +32,7 @@ Therefore, the performance gap mainly comes from two aspects：
 1) I add the background class to the dataset, which is possible to cause class imbalance problems and increases the complexity of the model.
 2) Due to limited video memory on a single GPU, I set the batch size to 12 and image size to 384 instead of 16 and 473 in the original paper. In addition, the experiments in the original paper used multiple GPUs.
     
-### TODO
+## TODO
 
 - [x] PSPNet
 - [ ] Deeplabv3
