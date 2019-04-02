@@ -11,17 +11,15 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 
 ## Performance
 
-
-
 #### PSPNet(ResNet50)
 | ADE20K    |   pixAcc    |    mIoU    |
-| -------- | -------:  | :------:  |
+| -------- | -------:  | :------: |
 | paper  |    80.04   |   41.68  |
 | my code(without background)  |   77.10   |  39.0  |
 | my code(with background)  |    \$12   |   12   |
 ##### Discussion and details:
 ```epoch: 30
- earning rate scheduler: poly
+ learning rate scheduler: poly
  batch size: 12
  image size: 384
  nbr_classes: 150(without background, standard ade20k) / 151 (with background)
