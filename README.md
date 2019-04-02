@@ -14,7 +14,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 #### PSPNet(ResNet50)
 | ADE20K    |   pixAcc    |    mIoU    |
 | -------- | -------:  | :------: |
-| paper(like https://github.com/hszhao/PSPNet) [1]  |    80.04   |   41.68  |
+| [paper](https://github.com/hszhao/PSPNet) [1]  |    80.04   |   41.68  |
 | my code(without background)  |   77.10   |  39.0  |
 | my code(with background)  |    \$12   |   12   |
 ##### Discussion and details:
@@ -44,5 +44,5 @@ Therefore, the performance gap mainly comes from two aspects：
 
 
 ## References
-[1]: Zhao, Hengshuang, et al. "Pyramid scene parsing network." Proceedings of the IEEE conference on computer vision and pattern recognition. 2017.
+[1] [Zhao, Hengshuang, et al. "Pyramid scene parsing network." Proceedings of the IEEE conference on computer vision and pattern recognition. 2017.](https://arxiv.org/abs/1612.01105)
 
