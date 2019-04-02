@@ -20,17 +20,12 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 | my code(without background)  |   77.10   |  39.0  |
 | my code(with background)  |    \$12   |   12   |
 ##### Discussion and details:
-`epoch: 30
-
+```epoch: 30
  earning rate scheduler: poly
- 
  batch size: 12
- 
  image size: 384
- 
  nbr_classes: 150(without background, standard ade20k) / 151 (with background)
- 
-`
+```
 In the original paper, authors run their experiments on the standard ADE20k(150 classes, without background). 
 But I regard the background (i.e. labeled 0 in the original mask) as a class and the output dimensionality of the PSPNet is 151 in my code.
 Therefore, the performance gap mainly comes from two aspects：
