@@ -12,11 +12,11 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 ### Performance
 
  #### PSPNet(ResNet50)
-    | ADE20K    |   pixAcc    |    mIoU    |
-    | -------- | -------:  | :------: |
-    | [paper](https://github.com/hszhao/PSPNet) [1]  |    80.04   |   41.68  |
-    | my code(without background)  |   77.10   |  39.0  |
-    | my code(with background)  |    \$12   |   12   |
+  | ADE20K    |   pixAcc    |    mIoU    |
+  | -------- | -------:  | :------: |
+  | [paper](https://github.com/hszhao/PSPNet) [1]  |    80.04   |   41.68  |
+  | my code(without background)  |   77.10   |  39.0  |
+  | my code(with background)  |    \$12   |   12   |
 
  ##### Discussion and details:
     ```
