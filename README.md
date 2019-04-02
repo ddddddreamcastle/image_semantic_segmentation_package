@@ -15,7 +15,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 
 #### PSPNet(ResNet50)
 | ADE20K        |    pixAcc    |    mIoU    |
-| --------   | -----:  | :----:  |
+| --------   | -------:  | :------:  |
 | paper    |    80.04   |   41.68  |
 | my code(without background)  |    77.10     |    39.0   |
 | my code(with background)  |     \$12     |     12     |
