@@ -35,7 +35,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
   Therefore, the performance gap mainly comes from three aspects：
   1) I add the background class to the dataset, which may lead to category imbalance problems and increases the complexity of the model.
   2) Due to limited video memory on a single GPU, I set the batch_size to 12 and image_size to 384 instead of 16 and 473 in the original paper. 
-  3) In addition, the experiments in the original paper used multiple GPUs, which means a larger batch_size can be set to make BN layers more effective.
+  3) In addition, the experiments in the original paper used multiple GPUs, which means a larger batch_size can be set to make Synchronization Batch Normalization layers more effective.
     
 ### TODO
 
