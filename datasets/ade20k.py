@@ -86,7 +86,9 @@ class ADE20K(data.Dataset):
                 mean=self.mean, std=self.std
             )
         ])
-        return ori, transform(ori)
+        prep = transform(ori)
+        prep.unsqueeze_(0)
+        return ori, prep
 
     def __preprocessing_for_validation(self, img, mask):
         w, h = img.size
