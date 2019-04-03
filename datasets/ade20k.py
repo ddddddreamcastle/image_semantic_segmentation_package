@@ -44,19 +44,19 @@ class ADE20K(data.Dataset):
 
     def init_data(self):
         if self.mode == 'train':
-            img_folder = os.path.join(self.data_path, 'train/images')
-            mask_folder = os.path.join(self.data_path, 'train/labels')
+            img_folder = os.path.join(self.data_path, 'images/training')
+            mask_folder = os.path.join(self.data_path, 'annotations/training')
             self.images, self.masks = self.__get_pairs(img_folder, mask_folder)
         elif self.mode == 'val':
-            img_folder = os.path.join(self.data_path, 'val/images')
-            mask_folder = os.path.join(self.data_path, 'val/labels')
+            img_folder = os.path.join(self.data_path, 'images/validation')
+            mask_folder = os.path.join(self.data_path, 'annotations/validation')
             self.images, self.masks = self.__get_pairs(img_folder, mask_folder)
         else:
-            train_img_folder = os.path.join(self.data_path, 'train/images')
-            train_mask_folder = os.path.join(self.data_path, 'train/labels')
+            train_img_folder = os.path.join(self.data_path, 'images/training')
+            train_mask_folder = os.path.join(self.data_path, 'annotations/training')
             train_img_paths, train_mask_paths = self.__get_pairs(train_img_folder, train_mask_folder)
-            val_img_folder = os.path.join(self.data_path, 'val/images')
-            val_mask_folder = os.path.join(self.data_path, 'val/labels')
+            val_img_folder = os.path.join(self.data_path, 'images/validation')
+            val_mask_folder = os.path.join(self.data_path, 'annotations/validation')
             val_img_paths, val_mask_paths = self.__get_pairs(val_img_folder, val_mask_folder)
             self.images = train_img_paths + val_img_paths
             self.masks = train_mask_paths + val_mask_paths
@@ -116,13 +116,13 @@ class ADE20K(data.Dataset):
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
 
         # random up-down flip
-        if random.random() < 0.5:
-            img = img.transpose(Image.FLIP_TOP_BOTTOM)
-            mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
+        # if random.random() < 0.5:
+        #     img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        #     mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
 
         # random gaussian blur
-        if random.random() < 0.5:
-            img = img.filter(ImageFilter.GaussianBlur(radius=2.0))
+        # if random.random() < 0.5:
+        #     img = img.filter(ImageFilter.GaussianBlur(radius=2.0))
 
         # random resize
         long_size = int((random.random() * (2 - 0.5) + 0.5) * self.image_size)
@@ -152,10 +152,10 @@ class ADE20K(data.Dataset):
         mask = mask.crop((crop_w, crop_h, crop_w + self.crop_size, crop_h + self.crop_size))
 
         # random rotation
-        if random.random() < 0.5:
-            rotation_degree = random.randint(-10, 10)
-            img = img.rotate(angle=rotation_degree, resample=Image.BILINEAR)
-            mask = mask.rotate(angle=rotation_degree, resample=Image.NEAREST)
+        # if random.random() < 0.5:
+        #     rotation_degree = random.randint(-10, 10)
+        #     img = img.rotate(angle=rotation_degree, resample=Image.BILINEAR)
+        #     mask = mask.rotate(angle=rotation_degree, resample=Image.NEAREST)
 
         return img, mask
 
