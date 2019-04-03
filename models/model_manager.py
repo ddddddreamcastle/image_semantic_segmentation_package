@@ -114,19 +114,23 @@ class Manager(object):
 
         def color(ori, pred):
             cm = np.argmax(pred, axis=0)
+            print( set(list(cm.reshape((1, -1))[0])) )
             color_cm = add_color(cm, self.model.nbr_classes)
-            img = 0.5 * ((color_cm * [0.229, 0.224, 0.225]) + [0.485, 0.456, 0.406])*255 + \
-                   0.5 * np.array(ori)
+            img = 0.5 * color_cm*255 + 0.5 * np.array(ori)
+            img = img.astype('uint8')
             return img
 
         def single_image(filepath):
             img = Image.open(filepath)
             ori, img = self.dataset.preprocessing_for_predict(img)
+            if torch.cuda.is_available():
+                img = img.cuda()
             pred = self.model(img)
             if self.model.deep_supervision:
                 pred = pred[0]
+            pred = pred.detach().cpu().numpy()[0]
             img = color(ori, pred)
-            filename, _ = os.path.splitext(filepath[filepath.rfind('/'):])
+            filename, _ = os.path.splitext(filepath[filepath.rfind('/')+1:])
             Image.fromarray(img).save(os.path.join(output_path, "result_{}.jpg".format(filename)))
 
         self.model.eval()
