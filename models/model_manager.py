@@ -21,6 +21,12 @@ class Manager(object):
 
         if args.mode == 'train':
             self.train_loader, self.val_loader = get_train_val_loader(args.dataset, **self.kwargs)
+        else:
+            self.dataset = get_dataset_tools(args.dataset, **self.kwargs)
+
+        self.model = get_model(name=args.model, kwargs=self.kwargs)
+
+        if args.mode == 'train':
             parameters = self.model.get_parameters_as_groups(args.learning_rate)
 
             self.optimizer = torch.optim.SGD(parameters, lr=args.learning_rate,
@@ -42,11 +48,6 @@ class Manager(object):
 
             if torch.cuda.is_available():
                 self.criterion = self.criterion.cuda()
-
-        else:
-            self.dataset = get_dataset_tools(args.dataset, **self.kwargs)
-
-        self.model = get_model(name=args.model, kwargs=self.kwargs)
 
         if torch.cuda.is_available():
             self.model = self.model.cuda()
