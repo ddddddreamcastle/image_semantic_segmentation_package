@@ -9,6 +9,10 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
   
 ### Usage
 
+```
+ python train.py --option1 value1 --option2 value2 ...
+```
+
 ### Performance
 
 #### PSPNet(ResNet50)
