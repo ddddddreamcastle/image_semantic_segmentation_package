@@ -23,13 +23,13 @@ class SegmentationErrorMeter(object):
         self.total_inter = 0
         self.total_union = 0
 
-    def add(self, output, target, has_background=True):
+    def add(self, output, target):
         if torch.is_tensor(output):
             output = output.detach().cpu().squeeze().numpy()
         if torch.is_tensor(target):
             target = target.detach().cpu().squeeze().numpy().astype('int32')
         for m in self.metrics:
-            self.metrics_library[m][0](output, target, has_background)
+            self.metrics_library[m][0](output, target)
 
     def values(self):
         return_values = []
@@ -37,7 +37,7 @@ class SegmentationErrorMeter(object):
             return_values.append(self.metrics_library[m][1]())
         return tuple(return_values)
 
-    def __batch_pixel_accuracy(self, output, target, has_background=True):
+    def __batch_pixel_accuracy(self, output, target):
 
         output = np.argmax(output, axis=1)
 
@@ -50,7 +50,7 @@ class SegmentationErrorMeter(object):
     def __pixAcc(self):
         return 1.0 * self.total_correct / (np.spacing(1) + self.total_labeled)
 
-    def __batch_intersection_union(self, output, target, has_background=True):
+    def __batch_intersection_union(self, output, target):
 
         output = np.argmax(output, axis=1).astype('int32') + 1
         output = output * (output > 0)
