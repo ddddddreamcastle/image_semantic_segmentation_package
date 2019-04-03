@@ -8,21 +8,26 @@ from PIL import Image, ImageOps, ImageFilter
 
 class ADE20K(data.Dataset):
 
-    NBR_CLASSES = 151 # with background
-    def __init__(self, mode='train', image_size=384, data_path='./data/'):
+    NBR_CLASSES = 150
+    def __init__(self, mode='train', image_size=384, data_path='./data/', use_background=True):
         self.mode = mode
         self.mean = [0.485, 0.456, 0.406]
         self.std = [0.229, 0.224, 0.225]
         self.data_path = data_path
         self.image_size = image_size * 1.083
         self.crop_size = image_size
-        self.init_data()
+        if not self.mode == 'pred':
+            self.init_data()
         self.im_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=self.mean, std=self.std
             )
         ])
+        if use_background:
+            ADE20K.NBR_CLASSES = 151
+        self.use_background = use_background
+
 
     def __get_pairs(self, img_folder, mask_folder):
         img_paths = []
@@ -72,6 +77,16 @@ class ADE20K(data.Dataset):
             img, mask = self.__preprocessing_for_validation(img, mask)
 
         return self.im_transform(img), self.__mask_transform(mask)
+
+    def preprocessing_for_predict(self, img):
+        ori = img.resize((self.crop_size, self.crop_size), Image.BILINEAR)
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=self.mean, std=self.std
+            )
+        ])
+        return ori, transform(ori)
 
     def __preprocessing_for_validation(self, img, mask):
         w, h = img.size
@@ -143,5 +158,7 @@ class ADE20K(data.Dataset):
         return img, mask
 
     def __mask_transform(self, mask):
-        target = np.array(mask).astype('int64')
+        target = np.array(mask).astype('int64') # 0~150, 151 classes
+        if not self.use_background:
+            target = target - 1 # -1~149, 150 classes
         return torch.from_numpy(target)

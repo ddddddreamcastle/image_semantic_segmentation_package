@@ -1,5 +1,5 @@
 from models.nn import get_model
-from datasets import get_train_val_loader
+from datasets import get_train_val_loader, get_dataset_tools
 import torch
 from loss import SegmentationLoss
 from torch import nn
@@ -10,7 +10,6 @@ from utils.meter import SegmentationErrorMeter
 from utils.recorder import save_checkpoint
 import os
 from PIL import Image
-import torchvision.transforms as transforms
 import numpy as np
 from utils.color import add_color
 class Manager(object):
@@ -19,30 +18,38 @@ class Manager(object):
         args = lr_parse(args)
         self.kwargs = vars(args)
         self.epochs = args.epochs
-        self.model = get_model(name=args.model, kwargs=self.kwargs)
-        self.train_loader, self.val_loader = get_train_val_loader(args.dataset, **self.kwargs)
 
-        parameters = self.model.get_parameters_as_groups(args.learning_rate)
+        if args.mode == 'train':
+            self.train_loader, self.val_loader = get_train_val_loader(args.dataset, **self.kwargs)
+            parameters = self.model.get_parameters_as_groups(args.learning_rate)
 
-        self.optimizer = torch.optim.SGD(parameters, lr=args.learning_rate,
-                                          weight_decay=args.weight_decay, momentum=args.momentum)
+            self.optimizer = torch.optim.SGD(parameters, lr=args.learning_rate,
+                                             weight_decay=args.weight_decay, momentum=args.momentum)
 
-        if args.supervision:
-            self.criterion = SegmentationLoss((nn.CrossEntropyLoss(), nn.CrossEntropyLoss()),
-                                     (1, args.supervision_weight))
+            if args.supervision:
+                self.criterion = SegmentationLoss(
+                    (nn.CrossEntropyLoss(ignore_index=-1), nn.CrossEntropyLoss(ignore_index=-1)),
+                    (1, args.supervision_weight))
+            else:
+                self.criterion = SegmentationLoss((nn.CrossEntropyLoss(ignore_index=-1),),
+                                                  (1,))
+
+            self.best_performance = 0
+            self.start_epoch = 0
+            self.lr_scheduler = LearningRateScheduler(args.lr_scheduler, args.learning_rate, args.epochs,
+                                                      len(self.train_loader),
+                                                      lr_decay_every=10, decay_rate=0.1)
+
+            if torch.cuda.is_available():
+                self.criterion = self.criterion.cuda()
+
         else:
-            self.criterion = SegmentationLoss((nn.CrossEntropyLoss(), ),
-                                         (1, ))
+            self.dataset = get_dataset_tools(args.dataset, **self.kwargs)
+
+        self.model = get_model(name=args.model, kwargs=self.kwargs)
 
         if torch.cuda.is_available():
             self.model = self.model.cuda()
-            self.criterion = self.criterion.cuda()
-
-        self.best_performance = 0
-        self.start_epoch = 0
-        self.lr_scheduler = LearningRateScheduler(args.lr_scheduler, args.learning_rate, args.epochs,
-                                                  len(self.train_loader),
-                                                  lr_decay_every=10, decay_rate = 0.1)
 
         if args.load_checkpoint:
             checkpoint = torch.load(args.load_checkpoint_path)
@@ -54,7 +61,6 @@ class Manager(object):
     def __do_epoch(self, epoch):
         train_loss = 0
         tqdm_bar = tqdm(self.train_loader)
-        meter = SegmentationErrorMeter(['pixAcc', 'mIoU'], self.model.nbr_classes)
         for i, (image, target) in enumerate(tqdm_bar):
             cur_lr = self.lr_scheduler.adjust_learning_rate(self.optimizer, i, epoch)
             self.optimizer.zero_grad()
@@ -105,15 +111,6 @@ class Manager(object):
                 self.__do_validation(epoch)
 
     def predict(self, path, output_path):
-        def preprocessing(img):
-            ori = img.resize((self.kwargs['image_size'], self.kwargs['image_size']), Image.BILINEAR)
-            transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                )
-            ])
-            return ori, transform(ori)
 
         def color(ori, pred):
             cm = np.argmax(pred, axis=0)
@@ -124,7 +121,7 @@ class Manager(object):
 
         def single_image(filepath):
             img = Image.open(filepath)
-            ori, img = preprocessing(img)
+            ori, img = self.dataset.preprocessing_for_predict(img)
             pred = self.model(img)
             if self.model.deep_supervision:
                 pred = pred[0]

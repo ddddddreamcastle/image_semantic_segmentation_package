@@ -119,5 +119,6 @@ def get_pspnet(backbone='resnet50', model_pretrained=True, supervision=True,
     nbr_classes = datasets[dataset].NBR_CLASSES
     psp = PSPNet(nbr_classes, supervision, backbone, **kwargs)
     if model_pretrained:
-        psp.load_state_dict(torch.load(model_pretrain_path), strict=False)
+        psp.load_state_dict(torch.load(model_pretrain_path)['state_dict'], strict=True)
+        print("model weights are loaded successfully")
     return psp
