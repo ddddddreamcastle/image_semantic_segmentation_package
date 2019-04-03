@@ -167,13 +167,11 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
 def get_resnet(nbr_layers=50):
-    weights_name = {50: 'resnet50.pth'}
 
     def build_net(backbone_pretrained_path='./weights/resnet50.pth', nbr_classes=1000, is_bottleneck = True,
                   pretrained=True, **kwargs):
         model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
         if pretrained:
-            # model.load_state_dict(torch.load('../weights/{}'.format(weights_name[nbr_layers])), strict=True)
             model.load_state_dict(torch.load(backbone_pretrained_path), strict=True)
             print('resnet{} weights are loaded successfully'.format(nbr_layers))
         return model
