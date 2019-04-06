@@ -44,7 +44,7 @@ class PSPCore(nn.Module):
         )
 
         self.tail = nn.Sequential(
-            nn.Conv2d(in_channels*2, branch_channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels*2, branch_channels, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(branch_channels),
             nn.ReLU(True),
             nn.Dropout(0.1, False),
@@ -73,9 +73,9 @@ class PSPNet(nn.Module):
         self.core = PSPCore(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method)
         if deep_supervision:
             self.aux_branch = nn.Sequential(
-                nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.BatchNorm2d(256),
-                nn.ReLU(True),
+                nn.ReLU(False),
                 nn.Dropout(0.1, False),
                 nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
             )
