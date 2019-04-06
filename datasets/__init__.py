@@ -10,10 +10,10 @@ def get_train_val_loader(name, image_size=384, data_path='./data/', batch_size=8
     global datasets
     train_loader = data.DataLoader(datasets[name](mode='train', image_size=image_size, data_path=data_path, use_background=use_background),
                                    batch_size=batch_size, shuffle=shuffle, num_workers=dataloader_workers,
-                                   pin_memory=pin_memory)
+                                   pin_memory=pin_memory, drop_last=True)
     val_loader = data.DataLoader(datasets[name](mode='val', image_size=image_size, data_path=data_path, use_background=use_background),
-                                 batch_size=batch_size, shuffle=shuffle, num_workers=dataloader_workers,
-                                 pin_memory=pin_memory)
+                                 batch_size=batch_size, shuffle=False, num_workers=dataloader_workers,
+                                 pin_memory=pin_memory, drop_last=False)
     return train_loader, val_loader
 
 def get_dataset_tools(name, image_size=384, use_background=True, **kwargs):
