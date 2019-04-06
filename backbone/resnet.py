@@ -26,10 +26,12 @@ class BasicBlock(nn.Module):
     def __init__(self, in_channel, out_channel, stride=1, dilation=1,
                  downsample=None, residual=True):
         super(BasicBlock, self).__init__()
-        self.conv_1_3x3 = nn.Conv2d(in_channel, out_channel, stride, padding=dilation, dilation=dilation)
+        self.conv_1_3x3 = nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=stride, padding=dilation,
+                                    dilation=dilation, bias=False)
         self.bn_1 = nn.BatchNorm2d(out_channel)
 
-        self.conv_2_3x3 = nn.Conv2d(out_channel, out_channel, stride, padding=dilation, dilation=dilation)
+        self.conv_2_3x3 = nn.Conv2d(out_channel, out_channel, kernel_size=3, stride=stride, padding=dilation,
+                                    dilation=dilation, bias=False)
         self.bn_2 = nn.BatchNorm2d(out_channel)
 
         self.downsample = downsample
