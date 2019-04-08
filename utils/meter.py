@@ -27,7 +27,7 @@ class SegmentationErrorMeter(object):
         if torch.is_tensor(output):
             output = output.detach().cpu().squeeze().numpy()
         if torch.is_tensor(target):
-            target = target.detach().cpu().squeeze().numpy().astype('int32')
+            target = target.detach().cpu().squeeze().numpy().astype('int64')
         for m in self.metrics:
             self.metrics_library[m][0](output, target)
 
@@ -52,15 +52,15 @@ class SegmentationErrorMeter(object):
 
     def __batch_intersection_union(self, output, target):
 
-        output = np.argmax(output, axis=1).astype('int32') + 1
-        output = output * (output > 0)
+        output = np.argmax(output, axis=1).astype('int64') + 1
+        output = output * (output > 0).astype(output.dtype)
         target = target + 1
 
         intersection = output * (output == target)
 
-        area_inter, _ = np.histogram(intersection, bins=self.nbr_classes, range=(1, self.nbr_classes+1))
-        area_pred, _ = np.histogram(output, bins=self.nbr_classes, range=(1, self.nbr_classes+1))
-        area_label, _ = np.histogram(target, bins=self.nbr_classes, range=(1, self.nbr_classes+1))
+        area_inter, _ = np.histogram(intersection, bins=self.nbr_classes, range=(1, self.nbr_classes))
+        area_pred, _ = np.histogram(output, bins=self.nbr_classes, range=(1, self.nbr_classes))
+        area_label, _ = np.histogram(target, bins=self.nbr_classes, range=(1, self.nbr_classes))
 
         area_union = area_pred + area_label - area_inter
         self.total_inter += area_inter

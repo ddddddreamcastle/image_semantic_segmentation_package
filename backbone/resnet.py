@@ -36,15 +36,16 @@ class BasicBlock(nn.Module):
 
         self.downsample = downsample
         self.residual = residual
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         residual = x
 
         out = self.conv_1_3x3(x)
-        out = F.relu(self.bn_1(out), True)
+        out = self.relu(self.bn_1(out))
 
         out = self.conv_2_3x3(out)
-        out = F.relu(self.bn_2(out), True)
+        out = self.relu(self.bn_2(out))
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -78,15 +79,16 @@ class Bottleneck(nn.Module):
 
         self.downsample = downsample
         self.residual = residual
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         residual = x
 
         out = self.conv_1_1x1(x)
-        out = F.relu(self.bn_1(out), True)
+        out = self.relu(self.bn_1(out))
 
         out = self.conv_2_3x3(out)
-        out = F.relu(self.bn_2(out), True)
+        out = self.relu(self.bn_2(out))
 
         out = self.conv_3_1x1(out)
         out = self.bn_3(out)
@@ -97,7 +99,7 @@ class Bottleneck(nn.Module):
         if self.residual:
             out += residual
 
-        out = F.relu(out, True)
+        out = self.relu(out)
         return out
 
 
