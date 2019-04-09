@@ -12,13 +12,14 @@ import os
 from PIL import Image
 import numpy as np
 from utils.color import add_color
+
 class Manager(object):
 
     def __init__(self, args):
         args = lr_parse(args)
         self.kwargs = vars(args)
         self.epochs = args.epochs
-
+        torch.manual_seed(1)
         if args.mode == 'train':
             self.train_loader, self.val_loader = get_train_val_loader(args.dataset, **self.kwargs)
         else:
@@ -68,6 +69,7 @@ class Manager(object):
             if torch.cuda.is_available():
                 image = image.cuda()
                 target = target.cuda()
+
             preds = self.model(image)
             loss = self.criterion(preds, target)
             loss.backward()
@@ -140,4 +142,3 @@ class Manager(object):
         else:
             for src_filename in os.listdir(path):
                 single_image(os.path.join(path, src_filename))
-

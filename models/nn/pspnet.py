@@ -47,7 +47,7 @@ class PSPCore(nn.Module):
             nn.Conv2d(in_channels*2, branch_channels, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(branch_channels),
             nn.ReLU(True),
-            nn.Dropout(0.1, False),
+            nn.Dropout2d(0.1, False),
             nn.Conv2d(branch_channels, out_channels, kernel_size=1, stride=1)
         )
 
@@ -76,7 +76,7 @@ class PSPNet(nn.Module):
                 nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.BatchNorm2d(256),
                 nn.ReLU(False),
-                nn.Dropout(0.1, False),
+                nn.Dropout2d(0.1, False),
                 nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
             )
 

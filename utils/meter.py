@@ -68,3 +68,4 @@ class SegmentationErrorMeter(object):
 
     def __mIoU(self):
         return (1.0 * self.total_inter / (np.spacing(1) + self.total_union)).mean()
+
