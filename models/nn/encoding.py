@@ -1,6 +1,4 @@
 import torch
-from torch import nn
-import torch.nn.functional as F
 from torch.autograd import Function
 
 class scaled_L2(Function):
@@ -33,6 +31,12 @@ class aggregate(Function):
 
     @staticmethod
     def backward(ctx, grad_E):
+        A, X, C = ctx.saved_variables
+        gradA = (grad_E.unsqueeze(1) * (X.unsqueeze(2).expand(X.size(0), X.size(1),
+                                                C.size(0), C.size(1)) - C.unsqueeze(0).unsqueeze(0))).sum(3)
+        gradX = torch.bmm(A, grad_E)
+        gradC = (-grad_E * A.sum(1).unsqueeze(2)).sum(0)
+        return gradA, gradX, gradC
 
 
 
