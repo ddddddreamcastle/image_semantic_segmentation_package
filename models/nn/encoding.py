@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Function
 
-class scaled_L2(Function):
+class ScaledL2(Function):
 
     @staticmethod
     def forward(ctx, X, C, S):
@@ -20,7 +20,10 @@ class scaled_L2(Function):
         GS = (grad_SL * (SL / S.view(1, 1, C.size(0)))).sum(0).sum(0)
         return GX, GC, GS
 
-class aggregate(Function):
+def scaled_l2(X, C, S):
+    return ScaledL2.apply(X, C, S)
+
+class Aggregate(Function):
 
     @staticmethod
     def forward(ctx, A, X, C):
@@ -38,6 +41,7 @@ class aggregate(Function):
         gradC = (-grad_E * A.sum(1).unsqueeze(2)).sum(0)
         return gradA, gradX, gradC
 
-
+def aggregate(A, X, C):
+    return Aggregate.apply(A, X, C)
 
 
