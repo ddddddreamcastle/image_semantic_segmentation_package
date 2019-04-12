@@ -8,7 +8,7 @@ parser.add_argument('--model_pretrained', type=bool, default=False)
 parser.add_argument('--model_pretrain_path', type=str, default='./logs/checkpoints/pspnet_resnet50_bk_ade20k_best.pt',
                     help='If `model_pretrained` is True, this param is necessary, or else will be neglected.')
 parser.add_argument('--backbone', type=str, default='resnet50', help='backbone name')
-parser.add_argument('--backbone_pretrained', type=str, default='resnet50',
+parser.add_argument('--backbone_pretrained', type=bool, default=True,
                     help='If `model_pretrained` is True, this param will be neglected.')
 parser.add_argument('--backbone_pretrained_path', type=str, default='./weights/resnet50.pth',
                     help='If `model_pretrained` is True, this param will be neglected.')
