@@ -24,10 +24,10 @@ class SegmentationErrorMeter(object):
         self.total_union = 0
 
     def add(self, output, target):
-        if torch.is_tensor(output):
-            output = output.detach().cpu().squeeze().numpy()
-        if torch.is_tensor(target):
-            target = target.detach().cpu().squeeze().numpy().astype('int64')
+        # if torch.is_tensor(output):
+        #     output = output.detach().cpu().squeeze().numpy()
+        # if torch.is_tensor(target):
+        #     target = target.detach().cpu().squeeze().numpy().astype('int64')
         for m in self.metrics:
             self.metrics_library[m][0](output, target)
 
@@ -39,10 +39,12 @@ class SegmentationErrorMeter(object):
 
     def __batch_pixel_accuracy(self, output, target):
 
-        output = np.argmax(output, axis=1)
+        _, output = torch.max(output, 1)
+        output = output.cpu().numpy().astype('int64') + 1
+        target = target.cpu().numpy().astype('int64') + 1
 
-        pixel_labeled = np.sum(target > -1)
-        pixel_correct = np.sum((output == target)*(target > -1))
+        pixel_labeled = np.sum(target > 0)
+        pixel_correct = np.sum((output == target)*(target > 0))
 
         self.total_correct += pixel_correct
         self.total_labeled += pixel_labeled
@@ -52,9 +54,13 @@ class SegmentationErrorMeter(object):
 
     def __batch_intersection_union(self, output, target):
 
-        output = np.argmax(output, axis=1).astype('int64') + 1
-        output = output * (output > 0).astype(output.dtype)
-        target = target + 1
+        _, output = torch.max(output, 1)
+        # output = np.argmax(output, axis=1).astype('int64') + 1
+
+        output = output.cpu().numpy().astype('int64') + 1
+        target = target.cpu().numpy().astype('int64') + 1
+
+        output = output * (target > 0).astype(output.dtype)
 
         intersection = output * (output == target)
 
