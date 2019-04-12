@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import math
 
 """
@@ -173,9 +172,9 @@ class ResNet(nn.Module):
 def get_resnet(nbr_layers=50):
 
     def build_net(backbone_pretrained_path='./weights/resnet50.pth', nbr_classes=1000, is_bottleneck = True,
-                  pretrained=True, **kwargs):
+                  backbone_pretrained=True, **kwargs):
         model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
-        if pretrained:
+        if backbone_pretrained:
             model.load_state_dict(torch.load(backbone_pretrained_path), strict=True)
             print('resnet{} weights are loaded successfully'.format(nbr_layers))
         return model
