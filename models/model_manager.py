@@ -19,7 +19,6 @@ class Manager(object):
         args = lr_parse(args)
         self.kwargs = vars(args)
         self.epochs = args.epochs
-        torch.manual_seed(1)
         if args.mode == 'train':
             self.train_loader, self.val_loader = get_train_val_loader(args.dataset, **self.kwargs)
         else:

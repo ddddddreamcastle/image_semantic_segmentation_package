@@ -2,10 +2,10 @@ import torch.nn as nn
 from datasets import datasets
 import torch
 from backbone import get_backbone
-from .encoding import scaled_l2, aggregate
+from .encoding import scaled_l2, aggregate, Encoding
 
 class EncCore(nn.Module):
-    def __init__(self, in_channels, out_channels, up_method, se_loss):
+    def __init__(self, in_channels, out_channels, up_method, se_loss, dim_codes):
         super(EncCore, self).__init__()
         self.top = nn.Sequential(
             nn.Conv2d(in_channels, 512, kernel_size=3, stride=1, padding=1, bias=False),
@@ -16,7 +16,9 @@ class EncCore(nn.Module):
             nn.Conv2d(512, 512, 1, bias=False),
             nn.BatchNorm2d(512),
             nn.ReLU(512),
-
+            Encoding(D=512, K=dim_codes),
+            nn.BatchNorm1d(dim_codes),
+            nn.ReLU(inplace=True),
         )
 
 
