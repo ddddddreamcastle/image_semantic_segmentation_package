@@ -13,13 +13,30 @@ class EncCore(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.encoding = nn.Sequential(
-            nn.Conv2d(512, 512, 1, bias=False),
+            nn.Conv2d(512, 512, kernel_size=1, bias=False),
             nn.BatchNorm2d(512),
-            nn.ReLU(512),
+            nn.ReLU(inplace=True),
             Encoding(D=512, K=dim_codes),
             nn.BatchNorm1d(dim_codes),
             nn.ReLU(inplace=True),
         )
+        self.fc = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.Sigmoid()
+        )
+        self.se_loss = se_loss
+        if se_loss:
+            self.se_layer = nn.Linear(in_channels, out_channels)
+
+        self.tail = nn.Sequential(
+            nn.Dropout2d(0.1, False),
+            nn.Conv2d(512, out_channels, kernel_size=1)
+        )
+
+    def forward(self, x):
+        self.top(x)
+
+
 
 
     def forward(self, x):
