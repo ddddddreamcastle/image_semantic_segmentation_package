@@ -21,7 +21,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 | -------- | -------:  | :------: |
 | [paper](https://github.com/hszhao/PSPNet) [1]  |    80.04   |   41.68  |
 | this code(without background)  |    77.1   |   38.6   |
-| this code(with background)  |    70.4   |   32.7   |
+| this code(with background)  |    72.1   |   34.3   |
 
 ##### Discussion and details:
 ```
