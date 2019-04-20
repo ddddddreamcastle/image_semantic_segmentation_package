@@ -24,6 +24,8 @@ parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--epochs', type=int, default=50, help='epochs')
 parser.add_argument('--supervision', default= True)
 parser.add_argument('--supervision_weight', type=float, default=0.4)
+parser.add_argument('--se_loss', default= True)
+parser.add_argument('--se_loss_weight', type=float, default=0.2)
 
 #dataset
 parser.add_argument('--dataset', type=str, default='ade20k')

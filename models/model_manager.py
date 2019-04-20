@@ -32,10 +32,15 @@ class Manager(object):
             self.optimizer = torch.optim.SGD(parameters, lr=args.learning_rate,
                                              weight_decay=args.weight_decay, momentum=args.momentum)
 
-            if args.supervision:
+            if args.supervision and not args.se_loss:
                 self.criterion = SegmentationLoss(
                     (nn.CrossEntropyLoss(ignore_index=-1), nn.CrossEntropyLoss(ignore_index=-1)),
                     (1, args.supervision_weight))
+            if args.supervision and args.se_loss:
+                self.criterion = SegmentationLoss(
+                    (nn.CrossEntropyLoss(ignore_index=-1), nn.CrossEntropyLoss(ignore_index=-1),
+                     nn.BCELoss()),
+                    (1, args.supervision_weight, args.se_loss_weight))
             else:
                 self.criterion = SegmentationLoss((nn.CrossEntropyLoss(ignore_index=-1),),
                                                   (1,))
