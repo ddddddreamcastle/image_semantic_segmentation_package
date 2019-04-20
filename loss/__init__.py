@@ -1,5 +1,4 @@
 from torch.nn.modules.loss import _Loss
-from torch import nn
 class SegmentationLoss(_Loss):
     def __init__(self, losses, weights):
         super(SegmentationLoss, self).__init__()
