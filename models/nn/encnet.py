@@ -62,6 +62,7 @@ class EncNet(nn.Module):
     def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50', se_loss=True, **kwargs):
         super(EncNet, self).__init__()
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
+        self.nbr_classes = nbr_classes
         self.backbone = get_backbone(backbone, **kwargs)
         self.core = EncCore(in_channels=2048, out_channels=nbr_classes, se_loss=se_loss, dim_codes=32)
         self.deep_supervision = deep_supervision
