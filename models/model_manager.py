@@ -2,6 +2,7 @@ from models.nn import get_model
 from datasets import get_train_val_loader, get_dataset_tools
 import torch
 from loss import SegmentationLoss
+from loss.se_loss import SELoss
 from torch import nn
 from utils.learning_rate_scheduler import LearningRateScheduler
 from utils.learning_rate_scheduler import lr_parse
@@ -38,9 +39,9 @@ class Manager(object):
                     (1, args.supervision_weight))
             if args.supervision and args.se_loss:
                 self.criterion = SegmentationLoss(
-                    (nn.CrossEntropyLoss(ignore_index=-1), nn.CrossEntropyLoss(ignore_index=-1),
-                     nn.BCELoss()),
-                    (1, args.supervision_weight, args.se_loss_weight))
+                    (nn.CrossEntropyLoss(ignore_index=-1), SELoss(self.model.nbr_classes),
+                     nn.CrossEntropyLoss(ignore_index=-1)),
+                    (1, args.se_loss_weight, args.supervision_weight))
             else:
                 self.criterion = SegmentationLoss((nn.CrossEntropyLoss(ignore_index=-1),),
                                                   (1,))
