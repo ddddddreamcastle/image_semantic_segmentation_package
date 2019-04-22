@@ -40,7 +40,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
     
 ### TODO
 
-- [x] PSPNet(finished)
+- [x] PSPNet(completed)
 - [x] ENCNet(testing)
 - [ ] ENCNet+JPU
 - [ ] Deeplabv3
