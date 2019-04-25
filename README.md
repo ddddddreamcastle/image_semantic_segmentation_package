@@ -26,10 +26,10 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 
 ##### Discussion and details:
 ```
- epoch: 30
+ epoch: 30(here) / 120(paper)
  learning rate scheduler: poly
- batch size: 12
- image size: 384
+ batch size: 12(here) / 16(paper)
+ image size: 384(here) / 473(paper)
  nbr_classes: 150(without background, standard ade20k) / 151 (with background)
 ```
   In the original paper, authors run their experiments on the standard ADE20k(150 classes, without background). 
