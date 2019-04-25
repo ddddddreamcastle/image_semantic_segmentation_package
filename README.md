@@ -72,4 +72,5 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 
 ### References
 [1] [Zhao, Hengshuang, et al. "Pyramid scene parsing network." Proceedings of the IEEE conference on computer vision and pattern recognition. 2017.](https://arxiv.org/abs/1612.01105)
+
 [2] [Zhang, Hang, et al. "Context encoding for semantic segmentation." Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2018.](http://openaccess.thecvf.com/content_cvpr_2018/papers/Zhang_Context_Encoding_for_CVPR_2018_paper.pdf)
