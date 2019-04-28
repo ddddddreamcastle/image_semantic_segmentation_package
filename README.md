@@ -44,15 +44,15 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 | ADE20K    |   pixAcc    |    mIoU    |
 | -------- | -------:  | :------: |
 | [paper](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  |    79.73   |   41.11  |
-| this code(without background)  |    76.7   |   37.3   |
+| this code(without background)  |    77.7   |   40.3   |
+
 ```
- epoch: 30 (here) / 120 (paper)
+ epoch: 50 (here) / 120 (paper)
  learning rate scheduler: poly
  batch size: 8 (here) / 16 (paper)
  image size: 400 (here) / 480 (paper)
  nbr_classes: 150(without background, standard ade20k)
 ```
-
 
 ### TODO
 
