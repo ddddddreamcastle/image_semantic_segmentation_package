@@ -141,7 +141,7 @@ class Xception(nn.Module):
 
 def get_xception():
     def build_net(backbone_pretrained_path='./weights/xception.pth', nbr_classes=1000,
-                  backbone_pretrained=False, os=16, **kwargs):
+                  backbone_pretrained=True, os=16, **kwargs):
         model = Xception(nbr_classes, os=os)
         if backbone_pretrained:
             model.load_state_dict(torch.load(backbone_pretrained_path), strict=True)
@@ -151,9 +151,9 @@ def get_xception():
     return build_net
 
 if __name__ == '__main__':
-    model = get_xception()()
-    g = make_dot(model(torch.rand(16, 3, 384, 384)), params=dict(model.named_parameters()))
-    g.render('xception')
+    model = get_xception()(backbone_pretrained_path='../weights/xception.pth')
+    # g = make_dot(model(torch.rand(16, 3, 384, 384)), params=dict(model.named_parameters()))
+    # g.render('xception')
 
     params = list(model.parameters())
     k = 0
