@@ -14,13 +14,13 @@ class SegmentationLoss(_Loss):
         self.weights = weights
 
     def forward(self, inputs, target):
-
         loss = 0
         if not isinstance(inputs, tuple):
             if isinstance(target, tuple):
                 raise RuntimeError('If input is an object, target cannot be a tuple')
             loss = self.losses[0](inputs, target)
         else:
+
             for idx, pred in enumerate(inputs):
                 if not isinstance(target, tuple):
                     loss += self.weights[idx] * self.losses[idx](pred, target)
