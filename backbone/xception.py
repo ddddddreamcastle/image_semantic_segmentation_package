@@ -12,18 +12,18 @@ from torchviz import make_dot
 
 class SeparableConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, padding=0, dilation=1, bias=False,
-                 depth_activation=True):
+                 depth_activation=True, inplace=True):
         super(SeparableConv2d, self).__init__()
-        self.relu_0 = nn.ReLU(True)
+        self.relu_0 = nn.ReLU(inplace)
 
         self.depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=kernel_size, stride=stride, padding=padding,
                                    dilation=dilation, bias=bias, groups=in_channels)
         self.bn_1 = nn.BatchNorm2d(in_channels)
-        self.relu_1 = nn.ReLU(True)
+        self.relu_1 = nn.ReLU(inplace)
 
         self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=bias)
         self.bn_2 = nn.BatchNorm2d(out_channels)
-        self.relu_2 = nn.ReLU(True)
+        self.relu_2 = nn.ReLU(inplace)
 
         self.depth_activation = depth_activation
 
@@ -41,8 +41,7 @@ class SeparableConv2d(nn.Module):
         return x
 
 class Block(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, dilation=1, bias=False,
-                 depth_activation=True, grow_first=True):
+    def __init__(self, in_channels, out_channels, stride=1, dilation=1, depth_activation=True, grow_first=True):
         super(Block, self).__init__()
 
         if in_channels != out_channels or stride != 1:
@@ -61,7 +60,7 @@ class Block(nn.Module):
         self.layer_2 = SeparableConv2d(inner_channels, out_channels, 3, stride=1, padding=dilation, dilation=dilation,
                                        bias=False, depth_activation=depth_activation)
         self.layer_3 = SeparableConv2d(out_channels,out_channels,3,stride=stride, padding=dilation,dilation=dilation,
-                                        bias=False,depth_activation=depth_activation)
+                                        bias=False,depth_activation=depth_activation, inplace=False)
 
     def forward(self, x):
         skip = x
@@ -108,6 +107,10 @@ class Xception(nn.Module):
         self.conv_5 = SeparableConv2d(1536, 2048, kernel_size=3, stride=1, padding=rate,
                                       dilation=rate, depth_activation=True)
 
+        self.bn_5 = nn.BatchNorm2d(2048)
+
+        self.fc = nn.Linear(2048, nbr_classes)
+
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
                 nn.init.xavier_uniform_(layer.weight)
@@ -115,7 +118,7 @@ class Xception(nn.Module):
                 layer.weight.data.fill_(1)
                 layer.bias.data.zero_()
 
-    def forward(self, x):
+    def base_forward(self, x):
         x = self.conv_1(x)
         x = self.bn_1(x)
         x = self.relu(x)
@@ -132,11 +135,22 @@ class Xception(nn.Module):
             x = block(x)
 
         x = self.block_20(x)
+        return x
+
+    def forward(self, x):
+        x = self.base_forward(x)
         x = self.conv_3(x)
         x = self.conv_4(x)
         x = self.conv_5(x)
-
+        x = self.bn_5(x)
         return x
+
+    def backbone_forward(self, x):
+        aux = self.base_forward(x)
+        x = self.conv_3(aux)
+        x = self.conv_4(x)
+        x = self.conv_5(x)
+        return x, aux
 
 
 def get_xception():
@@ -144,7 +158,7 @@ def get_xception():
                   backbone_pretrained=True, os=16, **kwargs):
         model = Xception(nbr_classes, os=os)
         if backbone_pretrained:
-            model.load_state_dict(torch.load(backbone_pretrained_path), strict=True)
+            model.load_state_dict(torch.load(backbone_pretrained_path), strict=False)
             print('xception weights are loaded successfully')
         return model
 

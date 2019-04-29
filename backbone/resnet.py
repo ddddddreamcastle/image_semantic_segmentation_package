@@ -140,16 +140,25 @@ class ResNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def forward(self, x):
+    def base_forward(self, x):
         x = self.head(x)
         x = self.block_1(x)
         x = self.block_2(x)
         x = self.block_3(x)
+        return x
+
+    def forward(self, x):
+        x = self.base_forward(x)
         x = self.block_4(x)
         x = self.avg_pool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
+
+    def backbone_forward(self, x):
+        aux = self.base_forward(x)
+        x = self.block_4(aux)
+        return x, aux
 
     def _make_layers(self, block, in_channel, out_channel, nbr_blocks, stride=1, dilation=1):
         downsample = None
