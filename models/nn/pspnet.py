@@ -94,12 +94,8 @@ class PSPNet(nn.Module):
 
     def forward(self, x):
         _, _, h, w = x.size()
-        x = self.backbone.head(x)
-        x = self.backbone.block_1(x)
-        x = self.backbone.block_2(x)
-        aux = self.backbone.block_3(x)
 
-        x = self.backbone.block_4(aux)
+        x, aux = self.backbone.backbone_forward(x)
 
         x = self.core(x)
         x = F.interpolate(x, (h, w), **self.up_method)
