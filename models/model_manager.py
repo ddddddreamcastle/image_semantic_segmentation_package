@@ -13,6 +13,7 @@ import os
 from PIL import Image
 import numpy as np
 from utils.color import add_color
+from torchviz import make_dot
 
 class Manager(object):
 
@@ -27,6 +28,9 @@ class Manager(object):
 
         self.model = get_model(name=args.model, kwargs=self.kwargs)
 
+        # g = make_dot(self.model(torch.rand(16, 3, 384, 384)), params=dict(self.model.named_parameters()))
+        # g.render('deeplabv3')
+
         if args.mode == 'train':
             parameters = self.model.get_parameters_as_groups(args.learning_rate)
 
@@ -37,7 +41,7 @@ class Manager(object):
                 self.criterion = SegmentationLoss(
                     (nn.CrossEntropyLoss(ignore_index=-1), nn.CrossEntropyLoss(ignore_index=-1)),
                     (1, args.supervision_weight))
-            if args.supervision and args.se_loss:
+            elif args.supervision and args.se_loss:
                 self.criterion = SegmentationLoss(
                     (nn.CrossEntropyLoss(ignore_index=-1), SELoss(self.model.nbr_classes),
                      nn.CrossEntropyLoss(ignore_index=-1)),
