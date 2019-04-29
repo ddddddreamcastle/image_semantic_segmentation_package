@@ -59,7 +59,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 - [x] PSPNet(completed)
 - [x] ENCNet(completed)
 - [ ] ENCNet+JPU
-- [ ] Deeplabv3(coding)
+- [x] Deeplabv3(testing)
 - [ ] Deeplabv3+(coding)
 - [ ] RefineNet
 - [ ] FPN
