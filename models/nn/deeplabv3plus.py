@@ -14,7 +14,7 @@ class DeepLabV3PlusCore(nn.Module):
         self.up_method = up_method
         self.aspp = ASPP(in_channels, inter_channels, self.up_method, rate=rate)
         self.backbone = backbone
-        self.dropout = nn.Dropout2d(0.5, False)
+        # self.dropout = nn.Dropout2d(0.5, False)
         self.outer_branch = nn.Sequential(
             nn.Conv2d(256, 48, 1, 1, padding=0, bias=False),
             nn.BatchNorm2d(48),
@@ -25,7 +25,7 @@ class DeepLabV3PlusCore(nn.Module):
             nn.Conv2d(inter_channels + 48, inter_channels, 3, 1, padding=1, bias=False),
             nn.BatchNorm2d(inter_channels),
             nn.ReLU(inplace=True),
-            nn.Dropout2d(0.5, False),
+            # nn.Dropout2d(0.5, False),
             nn.Conv2d(inter_channels, inter_channels, 3, 1, padding=1, bias=False),
             nn.BatchNorm2d(inter_channels),
             nn.ReLU(inplace=True),
@@ -39,7 +39,7 @@ class DeepLabV3PlusCore(nn.Module):
         x, aux = self.backbone.backbone_forward(x)
         hook = self.backbone.outer_branches[0]
         x = self.aspp(x)
-        x = self.dropout(x)
+        # x = self.dropout(x)
         x = F.interpolate(x, (h//4, w//4), **self.up_method)
 
         hook = self.outer_branch(hook)
@@ -72,7 +72,6 @@ class DeepLabV3Plus(nn.Module):
         if different_lr_in_layers:
             parameters.append({'params': self.core.backbone.parameters(), 'lr':lr})
             parameters.append({'params': self.core.aspp.parameters(), 'lr':lr*10})
-            parameters.append({'params': self.core.dropout.parameters(), 'lr':lr*10})
             parameters.append({'params': self.core.outer_branch.parameters(), 'lr':lr*10})
             parameters.append({'params': self.core.merge_layers.parameters(), 'lr':lr*10})
             parameters.append({'params': self.core.cls.parameters(), 'lr':lr*10})
