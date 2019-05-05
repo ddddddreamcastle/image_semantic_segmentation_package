@@ -16,43 +16,25 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 
 ### Performance
 
-#### PSPNet(ResNet50)
+| Algorithms    | backbone | dataset | batch_size | image_size | Epoch |   pixAcc    |   mIoU    |
+| -------- | -------:  | :------: | :-------:  | :------: | :-------:  | :------: | :------: |
+| [PSPNet](https://github.com/hszhao/PSPNet) [1]  | resnet50 | ade20k | 16 | 473 | 120 |  80.04   |   41.68  |
+| PSPNet  | resnet50 | ade20k | 12 | 384 | 30 |   77.1   |   38.6   |
+| PSPNet  | resnet50 | ade20k+bk | 12 | 384 | 30 |   72.19   |   35.3   |
+| [EncNet](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  | resnet50 | ade20k | 16 | 480 | 120 |  80.04   |   41.68  |
+| EncNet  | resnet50 | ade20k | 8 | 400 | 50|   77.7   |   40.3   |
+| DeeplabV3  | xception | ade20k | 8 | 384 | 50|   77.6   |   39.5   |
 
-| ADE20K    |   pixAcc    |    mIoU    |
-| -------- | -------:  | :------: |
-| [paper](https://github.com/hszhao/PSPNet) [1]  |    80.04   |   41.68  |
-| this code(without background)  |    77.1   |   38.6   |
-| this code(with background)  |    72.19   |   35.3   |
+The items with hyperlinks are the experimental results from the original paper
 
 ##### Discussion and details:
-```
- epoch: 30(here) / 120(paper)
- learning rate scheduler: poly
- batch size: 12(here) / 16(paper)
- image size: 384(here) / 473(paper)
- nbr_classes: 150(without background, standard ade20k) / 151 (with background)
-```
+
   In the original paper, authors run their experiments on the standard ADE20k(150 classes, without background). 
   But I regard the background (i.e. labeled 0 in the original mask) as a category and the output dimensionality of the PSPNet is 151 in my code.
   Therefore, the performance gap mainly comes from three aspects：
   1) I add the background class to the dataset, which may lead to category imbalance problems and increases the complexity of the model.
-  2) Due to limited video memory on a single GPU, I set the batch_size to 12 and image_size to 384 instead of 16 and 473 in the original paper. 
+  2) Due to limited video memory on a single GPU, I set the batch_size to 12/8 and image_size to 384/400 instead of the parameter settings in the original paper. 
   3) In addition, the experiments in the original paper used multiple GPUs, which means a larger batch_size can be set to make Synchronization Batch Normalization layers more effective.
-  
-#### EncNet(ResNet50)
-
-| ADE20K    |   pixAcc    |    mIoU    |
-| -------- | -------:  | :------: |
-| [paper](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  |    79.73   |   41.11  |
-| this code(without background)  |    77.7   |   40.3   |
-
-```
- epoch: 50 (here) / 120 (paper)
- learning rate scheduler: poly
- batch size: 8 (here) / 16 (paper)
- image size: 400 (here) / 480 (paper)
- nbr_classes: 150(without background, standard ade20k)
-```
 
 ### TODO
 
