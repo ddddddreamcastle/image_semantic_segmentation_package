@@ -41,8 +41,8 @@ The items with hyperlinks are the experimental results from the original paper
 - [x] PSPNet(completed)
 - [x] ENCNet(completed)
 - [ ] ENCNet+JPU
-- [x] Deeplabv3(testing)
-- [ ] Deeplabv3+(coding)
+- [x] Deeplabv3(completed)
+- [x] Deeplabv3+(testing)
 - [ ] RefineNet
 - [ ] FPN
 - [ ] LinkNet
