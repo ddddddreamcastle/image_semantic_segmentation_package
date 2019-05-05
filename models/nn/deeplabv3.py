@@ -3,11 +3,12 @@ from backbone import get_backbone
 from torch.nn import functional as F
 import torch
 from datasets import datasets
+from torchviz import make_dot
 
 class ASPPPooling(nn.Module):
-    def __init__(self, in_channels, out_channels, up_kwargs):
+    def __init__(self, in_channels, out_channels, up_method):
         super(ASPPPooling, self).__init__()
-        self._up_kwargs = up_kwargs
+        self.up_method = up_method
         self.global_pooling = nn.Sequential(nn.AdaptiveAvgPool2d(1),
                                  nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
                                  nn.BatchNorm2d(out_channels),
@@ -16,7 +17,7 @@ class ASPPPooling(nn.Module):
     def forward(self, x):
         _, _, h, w = x.size()
         image_feature = self.global_pooling(x)
-        return F.interpolate(image_feature, (h, w), **self._up_kwargs)
+        return F.interpolate(image_feature, (h, w), **self.up_method)
 
 
 class ASPP(nn.Module):
@@ -138,3 +139,19 @@ def get_deeplabv3(backbone='resnet50', model_pretrained=True, supervision=True,
         deeplab.load_state_dict(torch.load(model_pretrain_path)['state_dict'], strict=False)
         print("model weights are loaded successfully")
     return deeplab
+
+if __name__ == '__main__':
+    model = get_deeplabv3(backbone='xception', model_pretrained=False, backbone_pretrained=False, os=16)
+    g = make_dot(model(torch.rand(16, 3, 384, 384)), params=dict(model.named_parameters()))
+    g.render('deeplabv3')
+
+    # params = list(model.parameters())
+    # k = 0
+    # for i in params:
+    #     l = 1
+    #     print("layer architecture：" + str(list(i.size())))
+    #     for j in i.size():
+    #         l *= j
+    #     print("the number of parameters：" + str(l))
+    #     k = k + l
+    # print("the total of parameters：" + str(k))
