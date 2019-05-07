@@ -21,10 +21,10 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 | [PSPNet](https://github.com/hszhao/PSPNet) [1]  | resnet50 | ade20k | 16 | 473 | 120 |  80.04   |   41.68  |
 | PSPNet  | resnet50 | ade20k | 12 | 384 | 30 |   77.1   |   38.6   |
 | PSPNet  | resnet50 | ade20k+bk | 12 | 384 | 30 |   72.19   |   35.3   |
-| [EncNet](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  | resnet50 | ade20k | 16 | 480 | 120 |  80.04   |   41.68  |
+| [EncNet](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  | resnet50 | ade20k | 16 | 480 | 120 |  79.73   |   41.11  |
 | EncNet  | resnet50 | ade20k | 8 | 400 | 50|   77.7   |   40.3   |
-| DeeplabV3  | xception | ade20k | 8 | 384 | 50|   77.6   |   39.5   |
-| DeeplabV3+  | xception | ade20k | 8 | 384 | 50|   77.9   |   39.8   |
+| DeeplabV3 [3]  | xception | ade20k | 8 | 384 | 50|   77.6   |   39.5   |
+| DeeplabV3+ [4]  | xception | ade20k | 8 | 384 | 50|   77.9   |   39.8   |
 
 The items with hyperlinks are the experimental results from the original paper
 
@@ -39,7 +39,7 @@ The items with hyperlinks are the experimental results from the original paper
 
 ### TODO
 
-- [x] PSPNet(completed)
+- [x] PSPNet (completed)
 - [x] ENCNet(completed)
 - [ ] ENCNet+JPU
 - [x] Deeplabv3(completed)
@@ -49,11 +49,24 @@ The items with hyperlinks are the experimental results from the original paper
 - [ ] LinkNet
 - [ ] SegNet
 - [ ] FCN
-- [ ] Unet
-- [ ] Unet++
+- [ ] Unet(coding)
+- [ ] Unet++(coding)
+- [ ] DenseASPP
+- [ ] ICNet
+- [ ] BiSeNet
+- [ ] PSANet
+- [ ] DANet
+- [ ] OCNet
+- [ ] CCNet
+- [ ] ENet
+- [ ] DUNet
 
 
 ### References
 [1] [Zhao, Hengshuang, et al. "Pyramid scene parsing network." Proceedings of the IEEE conference on computer vision and pattern recognition. 2017.](https://arxiv.org/abs/1612.01105)
 
 [2] [Zhang, Hang, et al. "Context encoding for semantic segmentation." Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2018.](http://openaccess.thecvf.com/content_cvpr_2018/papers/Zhang_Context_Encoding_for_CVPR_2018_paper.pdf)
+
+[3][Chen, Liang Chieh , et al. "Rethinking Atrous Convolution for Semantic Image Segmentation." (2017).](https://arxiv.org/abs/1706.05587)
+
+[4][Chen, Liang Chieh , et al. "Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation." (2018).](https://arxiv.org/abs/1802.02611)
