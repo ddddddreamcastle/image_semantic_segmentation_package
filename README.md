@@ -24,6 +24,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 | [EncNet](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  | resnet50 | ade20k | 16 | 480 | 120 |  80.04   |   41.68  |
 | EncNet  | resnet50 | ade20k | 8 | 400 | 50|   77.7   |   40.3   |
 | DeeplabV3  | xception | ade20k | 8 | 384 | 50|   77.6   |   39.5   |
+| DeeplabV3+  | xception | ade20k | 8 | 384 | 50|   77.9   |   39.8   |
 
 The items with hyperlinks are the experimental results from the original paper
 
@@ -42,7 +43,7 @@ The items with hyperlinks are the experimental results from the original paper
 - [x] ENCNet(completed)
 - [ ] ENCNet+JPU
 - [x] Deeplabv3(completed)
-- [x] Deeplabv3+(testing)
+- [x] Deeplabv3+(completed)
 - [ ] RefineNet
 - [ ] FPN
 - [ ] LinkNet
