@@ -67,6 +67,6 @@ The items with hyperlinks are the experimental results from the original paper
 
 [2] [Zhang, Hang, et al. "Context encoding for semantic segmentation." Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2018.](http://openaccess.thecvf.com/content_cvpr_2018/papers/Zhang_Context_Encoding_for_CVPR_2018_paper.pdf)
 
-[3][Chen, Liang Chieh , et al. "Rethinking Atrous Convolution for Semantic Image Segmentation." (2017).](https://arxiv.org/abs/1706.05587)
+[3] [Chen, Liang Chieh , et al. "Rethinking Atrous Convolution for Semantic Image Segmentation." (2017).](https://arxiv.org/abs/1706.05587)
 
-[4][Chen, Liang Chieh , et al. "Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation." (2018).](https://arxiv.org/abs/1802.02611)
+[4] [Chen, Liang-Chieh, et al. "Encoder-decoder with atrous separable convolution for semantic image segmentation." Proceedings of the European Conference on Computer Vision (ECCV). 2018.](https://arxiv.org/abs/1802.02611)
