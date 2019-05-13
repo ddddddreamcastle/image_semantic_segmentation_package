@@ -16,15 +16,15 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 
 ### Performance
 
-| Algorithms    | backbone | dataset | batch_size | image_size | Epoch |   pixAcc    |   mIoU    |
-| -------- | -------:  | :------: | :-------:  | :------: | :-------:  | :------: | :------: |
-| [PSPNet](https://github.com/hszhao/PSPNet) [1]  | resnet50 | ade20k | 16 | 473 | 120 |  80.04   |   41.68  |
-| PSPNet  | resnet50 | ade20k | 12 | 384 | 30 |   77.1   |   38.6   |
-| PSPNet  | resnet50 | ade20k+bk | 12 | 384 | 30 |   72.19   |   35.3   |
-| [EncNet](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  | resnet50 | ade20k | 16 | 480 | 120 |  79.73   |   41.11  |
-| EncNet  | resnet50 | ade20k | 8 | 400 | 50|   77.7   |   40.3   |
-| DeeplabV3 [3]  | xception | ade20k | 8 | 384 | 50|   77.6   |   39.5   |
-| DeeplabV3+ [4]  | xception | ade20k | 8 | 384 | 50|   77.9   |   39.8   |
+| Algorithms    | backbone | norm |dataset | batch_size | image_size | Epoch |   pixAcc    |   mIoU    |
+| -------- | -------:  | :------: |:------: | :-------:  | :------: | :-------:  | :------: | :------: |
+| [PSPNet](https://github.com/hszhao/PSPNet) [1]  | resnet50 |bn |ade20k | 16 | 473 | 120 |  80.04   |   41.68  |
+| PSPNet  | resnet50 |bn | ade20k | 12 | 384 | 30 |   77.1   |   38.6   |
+| PSPNet  | resnet50 |bn | ade20k+bk | 12 | 384 | 30 |   72.19   |   35.3   |
+| [EncNet](https://github.com/zhanghang1989/PyTorch-Encoding) [2]  | resnet50 | bn | ade20k | 16 | 480 | 120 |  79.73   |   41.11  |
+| EncNet  | resnet50 | bn |ade20k | 8 | 400 | 50|   77.7   |   40.3   |
+| DeeplabV3 [3]  | xception | bn |ade20k | 8 | 384 | 50|   77.6   |   39.5   |
+| DeeplabV3+ [4]  | xception | bn |ade20k | 8 | 384 | 50|   77.9   |   39.8   |
 
 The items with hyperlinks are the experimental results from the original paper
 
