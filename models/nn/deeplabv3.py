@@ -4,14 +4,15 @@ from torch.nn import functional as F
 import torch
 from datasets import datasets
 from torchviz import make_dot
+from models.components.norm import get_norm
 
 class ASPPPooling(nn.Module):
-    def __init__(self, in_channels, out_channels, up_method):
+    def __init__(self, in_channels, out_channels, up_method, norm='bn'):
         super(ASPPPooling, self).__init__()
         self.up_method = up_method
         self.global_pooling = nn.Sequential(nn.AdaptiveAvgPool2d(1),
                                  nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
-                                 nn.BatchNorm2d(out_channels),
+                                 get_norm(norm, channels=out_channels),
                                  nn.ReLU(True))
 
     def forward(self, x):
@@ -21,32 +22,32 @@ class ASPPPooling(nn.Module):
 
 
 class ASPP(nn.Module):
-    def __init__(self, in_channels, out_channels, up_method, rate=1):
+    def __init__(self, in_channels, out_channels, up_method, rate=1, norm='bn'):
         super(ASPP, self).__init__()
         self.branch_1 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(out_channels),
+            get_norm(norm, channels=out_channels),
             nn.ReLU(True)
         )
 
         self.branch_2 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, dilation=6 * rate, padding=6 * rate,
                       bias=False),
-            nn.BatchNorm2d(out_channels),
+            get_norm(norm, channels=out_channels),
             nn.ReLU(True)
         )
 
         self.branch_3 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, dilation=12 * rate, padding=12 * rate,
                       bias=False),
-            nn.BatchNorm2d(out_channels),
+            get_norm(norm, channels=out_channels),
             nn.ReLU(True)
         )
 
         self.branch_4 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, dilation=18 * rate, padding=18 * rate,
                       bias=False),
-            nn.BatchNorm2d(out_channels),
+            get_norm(norm, channels=out_channels),
             nn.ReLU(True)
         )
         self.up_method = up_method
@@ -54,7 +55,7 @@ class ASPP(nn.Module):
 
         self.merge_branch = nn.Sequential(
             nn.Conv2d(5 * out_channels, out_channels, 1, bias=False),
-            nn.BatchNorm2d(out_channels),
+            get_norm(norm, channels=out_channels),
             nn.ReLU(True),
             nn.Dropout2d(0.1, False)
         )
@@ -70,7 +71,7 @@ class ASPP(nn.Module):
 
 
 class DeepLabV3Core(nn.Module):
-    def __init__(self, in_channels, out_channels, up_method, os=16):
+    def __init__(self, in_channels, out_channels, up_method, os=16, norm='bn'):
         super(DeepLabV3Core, self).__init__()
         rate = 16 // os
         inter_channels = in_channels // os
@@ -78,7 +79,7 @@ class DeepLabV3Core(nn.Module):
         self.aspp = ASPP(in_channels, inter_channels, self.up_method, rate=rate)
         self.tail = nn.Sequential(
             nn.Conv2d(inter_channels, inter_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(inter_channels),
+            get_norm(norm, channels=inter_channels),
             nn.ReLU(True),
             nn.Dropout2d(0.1, False),
             nn.Conv2d(inter_channels, out_channels, 1)
@@ -91,17 +92,17 @@ class DeepLabV3Core(nn.Module):
 
 
 class DeepLabV3(nn.Module):
-    def __init__(self, nbr_classes, backbone='xception', deep_supervision=True, os=16, **kwargs):
+    def __init__(self, nbr_classes, backbone='xception', deep_supervision=True, os=16, norm='bn', **kwargs):
         super(DeepLabV3, self).__init__()
         self.nbr_classes = nbr_classes
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
-        self.backbone = get_backbone(backbone, **kwargs)
+        self.backbone = get_backbone(backbone, norm=norm, **kwargs)
         self.core = DeepLabV3Core(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method,
-                                  os=os)
+                                  os=os, norm=norm)
         if deep_supervision:
             self.aux_branch = nn.Sequential(
                 nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(256),
+                get_norm(norm, channels=256),
                 nn.ReLU(False),
                 nn.Dropout2d(0.1, False),
                 nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
@@ -132,9 +133,9 @@ class DeepLabV3(nn.Module):
         return x
 
 def get_deeplabv3(backbone='resnet50', model_pretrained=True, supervision=True,
-               model_pretrain_path=None, dataset='ade20k', **kwargs):
+               model_pretrain_path=None, dataset='ade20k', norm='bn', **kwargs):
     nbr_classes = datasets[dataset].NBR_CLASSES
-    deeplab = DeepLabV3(nbr_classes, deep_supervision=supervision, backbone=backbone, **kwargs)
+    deeplab = DeepLabV3(nbr_classes, deep_supervision=supervision, backbone=backbone, norm=norm, **kwargs)
     if model_pretrained:
         deeplab.load_state_dict(torch.load(model_pretrain_path)['state_dict'], strict=False)
         print("model weights are loaded successfully")

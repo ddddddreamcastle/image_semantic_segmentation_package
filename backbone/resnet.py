@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import math
-
+from models.components.norm import get_norm
 """
     Reference:
         [1] He, Kaiming, et al. "Deep residual learning for image recognition." Proceedings of the IEEE conference on computer vision and pattern recognition. 2016.
@@ -23,15 +23,15 @@ class BasicBlock(nn.Module):
 
     """ Basic residual block for Dilated Residual Networks (DRN) """
     def __init__(self, in_channel, out_channel, stride=1, dilation=1,
-                 downsample=None, residual=True):
+                 downsample=None, residual=True, norm='bn'):
         super(BasicBlock, self).__init__()
         self.conv_1_3x3 = nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=stride, padding=dilation,
                                     dilation=dilation, bias=False)
-        self.bn_1 = nn.BatchNorm2d(out_channel)
+        self.bn_1 = get_norm(norm, channels=out_channel)
 
         self.conv_2_3x3 = nn.Conv2d(out_channel, out_channel, kernel_size=3, stride=stride, padding=dilation,
                                     dilation=dilation, bias=False)
-        self.bn_2 = nn.BatchNorm2d(out_channel)
+        self.bn_2 = get_norm(norm, channels=out_channel)
 
         self.downsample = downsample
         self.residual = residual
@@ -61,24 +61,25 @@ class Bottleneck(nn.Module):
 
     """ Bottleneck for Dilated Residual Networks (DRN) """
     def __init__(self, in_channel, out_channel, stride=1, dilation=1,
-                 downsample=None, residual=True):
+                 downsample=None, residual=True, norm='bn'):
         super(Bottleneck, self).__init__()
         # 1x1
         self.conv_1_1x1 = nn.Conv2d(in_channel, out_channel, 1, bias=False)
-        self.bn_1 = nn.BatchNorm2d(out_channel)
+        self.bn_1 = get_norm(norm, channels=out_channel)
 
         # 3x3
         self.conv_2_3x3 = nn.Conv2d(out_channel, out_channel, 3, stride=stride, padding=dilation, dilation=dilation,
                                     bias=False)
-        self.bn_2 = nn.BatchNorm2d(out_channel)
+        self.bn_2 = get_norm(norm, channels=out_channel)
 
         # 1x1
         self.conv_3_1x1 = nn.Conv2d(out_channel, 4 * out_channel, 1, bias=False)
-        self.bn_3 = nn.BatchNorm2d(4 * out_channel)
+        self.bn_3 = get_norm(norm, channels=4 * out_channel)
 
         self.downsample = downsample
         self.residual = residual
         self.relu = nn.ReLU(inplace=True)
+
 
     def forward(self, x):
         residual = x
@@ -104,7 +105,7 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, nbr_classes=1000, is_bottleneck = True, nbr_layers=50):
+    def __init__(self, nbr_classes=1000, is_bottleneck = True, nbr_layers=50, norm='bn'):
         super(ResNet, self).__init__()
         global net_structures
         if nbr_layers not in net_structures:
@@ -113,22 +114,25 @@ class ResNet(nn.Module):
 
         self.head = nn.Sequential(
             conv3x3(3, 64, stride=2),
-            nn.BatchNorm2d(64),
+            get_norm(norm, channels=64),
             nn.ReLU(inplace=True),
+
             conv3x3(64, 64),
-            nn.BatchNorm2d(64),
+            get_norm(norm, channels=64),
             nn.ReLU(inplace=True),
+
             conv3x3(64, 128),
-            nn.BatchNorm2d(128),
+            get_norm(norm, channels=128),
             nn.ReLU(inplace=True),
+
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
 
         residual_block = Bottleneck if is_bottleneck else BasicBlock
-        self.block_1 = self._make_layers(residual_block, 128, 64, net_structure[0])
-        self.block_2 = self._make_layers(residual_block, 64 * residual_block.expansion, 128, net_structure[1], stride=2)
-        self.block_3 = self._make_layers(residual_block, 128 * residual_block.expansion, 256, net_structure[2], dilation=2)
-        self.block_4 = self._make_layers(residual_block, 256 * residual_block.expansion, 512, net_structure[3], dilation=4)
+        self.block_1 = self._make_layers(residual_block, 128, 64, net_structure[0], norm=norm)
+        self.block_2 = self._make_layers(residual_block, 64 * residual_block.expansion, 128, net_structure[1], stride=2, norm=norm)
+        self.block_3 = self._make_layers(residual_block, 128 * residual_block.expansion, 256, net_structure[2], dilation=2, norm=norm)
+        self.block_4 = self._make_layers(residual_block, 256 * residual_block.expansion, 512, net_structure[3], dilation=4, norm=norm)
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(512 * residual_block.expansion, nbr_classes)
 
@@ -139,10 +143,15 @@ class ResNet(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+            elif isinstance(m, nn.GroupNorm):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def base_forward(self, x):
+        self.outer_branches = []
         x = self.head(x)
         x = self.block_1(x)
+        self.outer_branches.append(x)
         x = self.block_2(x)
         x = self.block_3(x)
         return x
@@ -160,29 +169,29 @@ class ResNet(nn.Module):
         x = self.block_4(aux)
         return x, aux
 
-    def _make_layers(self, block, in_channel, out_channel, nbr_blocks, stride=1, dilation=1):
+    def _make_layers(self, block, in_channel, out_channel, nbr_blocks, stride=1, dilation=1, norm='bn'):
         downsample = None
         if stride != 1 or in_channel != out_channel * block.expansion:
             downsample = nn.Sequential(
                 nn.Conv2d(in_channel, out_channel * block.expansion, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(out_channel * block.expansion)
+                get_norm(norm, channels=out_channel * block.expansion)
             )
         layers = []
         layers.append(block(in_channel, out_channel, stride=stride, downsample=downsample,
-            dilation=1 if dilation == 1 else dilation // 2))
+            dilation=1 if dilation == 1 else dilation // 2, norm=norm))
 
         in_channel = out_channel * block.expansion
 
         for _ in range(1, nbr_blocks):
-            layers.append(block(in_channel, out_channel, dilation=dilation))
+            layers.append(block(in_channel, out_channel, dilation=dilation, norm=norm))
 
         return nn.Sequential(*layers)
 
 def get_resnet(nbr_layers=50):
 
     def build_net(backbone_pretrained_path='./weights/resnet50.pth', nbr_classes=1000, is_bottleneck = True,
-                  backbone_pretrained=True, **kwargs):
-        model = ResNet(nbr_classes, is_bottleneck, nbr_layers)
+                  backbone_pretrained=True, norm='bn', **kwargs):
+        model = ResNet(nbr_classes, is_bottleneck, nbr_layers, norm=norm)
         if backbone_pretrained:
             model.load_state_dict(torch.load(backbone_pretrained_path), strict=True)
             print('resnet{} weights are loaded successfully'.format(nbr_layers))

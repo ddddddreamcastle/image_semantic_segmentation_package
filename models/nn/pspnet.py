@@ -3,14 +3,14 @@ from backbone import get_backbone
 from torch.nn import functional as F
 import torch
 from datasets import datasets
-
+from models.components.norm import get_norm
 """
     Reference:
         Zhao, Hengshuang, et al. "Pyramid scene parsing network." Proceedings of the IEEE conference on computer vision and pattern recognition. 2017.
 """
 
 class PSPCore(nn.Module):
-    def __init__(self, in_channels, out_channels, up_method):
+    def __init__(self, in_channels, out_channels, up_method, norm='bn'):
         super(PSPCore, self).__init__()
 
         branch_channels = in_channels // 4
@@ -18,34 +18,34 @@ class PSPCore(nn.Module):
         self.branch_1 = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(in_channels, branch_channels, 1, bias=False),
-            nn.BatchNorm2d(branch_channels),
+            get_norm(norm, channels=branch_channels),
             nn.ReLU(True)
         )
 
         self.branch_2 = nn.Sequential(
             nn.AdaptiveAvgPool2d(2),
             nn.Conv2d(in_channels, branch_channels, 1, bias=False),
-            nn.BatchNorm2d(branch_channels),
+            get_norm(norm, channels=branch_channels),
             nn.ReLU(True)
         )
 
         self.branch_3 = nn.Sequential(
             nn.AdaptiveAvgPool2d(3),
             nn.Conv2d(in_channels, branch_channels, 1, bias=False),
-            nn.BatchNorm2d(branch_channels),
+            get_norm(norm, channels=branch_channels),
             nn.ReLU(True)
         )
 
         self.branch_6 = nn.Sequential(
             nn.AdaptiveAvgPool2d(6),
             nn.Conv2d(in_channels, branch_channels, 1, bias=False),
-            nn.BatchNorm2d(branch_channels),
+            get_norm(norm, channels=branch_channels),
             nn.ReLU(True)
         )
 
         self.tail = nn.Sequential(
             nn.Conv2d(in_channels*2, branch_channels, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(branch_channels),
+            get_norm(norm, channels=branch_channels),
             nn.ReLU(True),
             nn.Dropout2d(0.1, False),
             nn.Conv2d(branch_channels, out_channels, kernel_size=1, stride=1)
@@ -64,17 +64,17 @@ class PSPCore(nn.Module):
 
 
 class PSPNet(nn.Module):
-    def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50', **kwargs):
+    def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50', norm='bn', **kwargs):
         super(PSPNet, self).__init__()
         self.nbr_classes = nbr_classes
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.deep_supervision = deep_supervision
-        self.backbone = get_backbone(backbone, **kwargs)
-        self.core = PSPCore(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method)
+        self.backbone = get_backbone(backbone, norm=norm, **kwargs)
+        self.core = PSPCore(in_channels=2048, out_channels=nbr_classes, up_method=self.up_method, norm=norm)
         if deep_supervision:
             self.aux_branch = nn.Sequential(
                 nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(256),
+                get_norm(norm, channels=256),
                 nn.ReLU(False),
                 nn.Dropout2d(0.1, False),
                 nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
@@ -106,9 +106,9 @@ class PSPNet(nn.Module):
         return x
 
 def get_pspnet(backbone='resnet50', model_pretrained=True, supervision=True,
-               model_pretrain_path=None, dataset='ade20k', **kwargs):
+               model_pretrain_path=None, dataset='ade20k', norm='bn', **kwargs):
     nbr_classes = datasets[dataset].NBR_CLASSES
-    psp = PSPNet(nbr_classes, supervision, backbone, **kwargs)
+    psp = PSPNet(nbr_classes, supervision, backbone, norm=norm, **kwargs)
     if model_pretrained:
         psp.load_state_dict(torch.load(model_pretrain_path)['state_dict'], strict=False)
         print("model weights are loaded successfully")

@@ -1,6 +1,7 @@
 from torch import nn
 from torchviz import make_dot
 import torch
+from models.components.norm import get_norm
 
 cfg = {
     11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -10,9 +11,9 @@ cfg = {
 }
 
 class VGG(nn.Module):
-    def __init__(self, nbr_classes=1000, nbr_layers=16, batch_norm=True, dilation=False):
+    def __init__(self, nbr_classes=1000, nbr_layers=16, batch_norm=True, dilation=False, norm='bn'):
         super(VGG, self).__init__()
-        self.features = self._make_layers(cfg[nbr_layers], batch_norm=batch_norm, dilation=dilation)
+        self.features = self._make_layers(cfg[nbr_layers], batch_norm=batch_norm, dilation=dilation, norm=norm)
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
             nn.ReLU(True),
@@ -29,7 +30,7 @@ class VGG(nn.Module):
         x = self.classifier(x)
         return x
 
-    def _make_layers(self, cfg, batch_norm=True, dilation=True):
+    def _make_layers(self, cfg, batch_norm=True, dilation=True, norm='bn'):
         layers = []
         in_channels = 3
         multi_grid = [1,2,4,8]
@@ -45,11 +46,21 @@ class VGG(nn.Module):
                     conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=multi_grid[i], dilation=multi_grid[i])
                     i += 1
                 if batch_norm:
-                    layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+                    layers += [conv2d, get_norm(norm, channels=v), nn.ReLU(inplace=True)]
                 else:
                     layers += [conv2d, nn.ReLU(inplace=True)]
                 in_channels = v
         return nn.Sequential(*layers)
+
+def get_vgg(nbr_layers=16, batch_norm=True, dilation=False):
+    def build_net(backbone_pretrained_path='./weights/vgg16.pth', nbr_classes=1000,
+                  backbone_pretrained=True, norm='bn', **kwargs):
+        model = VGG(nbr_classes, nbr_layers=nbr_layers, batch_norm=batch_norm, dilation=dilation, norm=norm)
+        if backbone_pretrained:
+            model.load_state_dict(torch.load(backbone_pretrained_path), strict=False)
+            print('vgg weights are loaded successfully')
+        return model
+    return build_net
 
 if __name__ == '__main__':
     vgg = VGG(nbr_classes=1000, nbr_layers=16, batch_norm=True, dilation=False)

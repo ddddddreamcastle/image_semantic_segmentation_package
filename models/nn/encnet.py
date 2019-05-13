@@ -2,9 +2,10 @@ import torch.nn as nn
 from datasets import datasets
 import torch
 from backbone import get_backbone
-from models.nn.encoding import Encoding
+from models.components.encoding import Encoding
 import torch.nn.functional as F
 from torchviz import make_dot
+from models.components.norm import get_norm
 
 class Mean(nn.Module):
     def __init__(self, dim, keep_dim=False):
@@ -16,19 +17,19 @@ class Mean(nn.Module):
         return input.mean(self.dim, self.keep_dim)
 
 class EncCore(nn.Module):
-    def __init__(self, in_channels, out_channels, se_loss, dim_codes):
+    def __init__(self, in_channels, out_channels, se_loss, dim_codes, norm='bn'):
         super(EncCore, self).__init__()
         self.top = nn.Sequential(
             nn.Conv2d(in_channels, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(512),
+            get_norm(norm, channels=512),
             nn.ReLU(inplace=True)
         )
         self.encoding = nn.Sequential(
             nn.Conv2d(512, 512, kernel_size=1, bias=False),
-            nn.BatchNorm2d(512),
+            get_norm(norm, channels=512),
             nn.ReLU(inplace=True),
             Encoding(D=512, K=dim_codes),
-            nn.BatchNorm1d(dim_codes),
+            get_norm('{}1d'.format(norm) if norm == 'bn' or norm == 'sn' else 'gn', channels=dim_codes),
             nn.ReLU(inplace=True),
             Mean(dim=1)
         )
@@ -59,17 +60,17 @@ class EncCore(nn.Module):
 
 
 class EncNet(nn.Module):
-    def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50', se_loss=True, **kwargs):
+    def __init__(self, nbr_classes, deep_supervision=True, backbone='resnet50', se_loss=True, norm='bn', **kwargs):
         super(EncNet, self).__init__()
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.nbr_classes = nbr_classes
-        self.backbone = get_backbone(backbone, **kwargs)
-        self.core = EncCore(in_channels=2048, out_channels=nbr_classes, se_loss=se_loss, dim_codes=32)
+        self.backbone = get_backbone(backbone, norm=norm, **kwargs)
+        self.core = EncCore(in_channels=2048, out_channels=nbr_classes, se_loss=se_loss, dim_codes=32, norm=norm)
         self.deep_supervision = deep_supervision
         if self.deep_supervision:
             self.aux_branch = nn.Sequential(
                 nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(256),
+                get_norm(norm, channels=256),
                 nn.ReLU(False),
                 nn.Dropout2d(0.1, False),
                 nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
@@ -101,9 +102,9 @@ class EncNet(nn.Module):
         return tuple(x)
 
 def get_encnet(backbone='resnet50', model_pretrained=True, supervision=True,
-               model_pretrain_path=None, dataset='ade20k', **kwargs):
+               model_pretrain_path=None, dataset='ade20k', norm='bn', **kwargs):
     nbr_classes = datasets[dataset].NBR_CLASSES
-    enc = EncNet(nbr_classes, supervision, backbone, **kwargs)
+    enc = EncNet(nbr_classes, supervision, backbone, norm=norm, **kwargs)
     if model_pretrained:
         enc.load_state_dict(torch.load(model_pretrain_path)['state_dict'], strict=False)
         print("model weights are loaded successfully")

@@ -5,29 +5,28 @@ import torch
 from datasets import datasets
 from models.nn.deeplabv3 import ASPP
 from torchviz import make_dot
+from models.components.norm import get_norm
 
 class DeepLabV3PlusCore(nn.Module):
-    def __init__(self, in_channels, out_channels, backbone,up_method, os=16):
+    def __init__(self, in_channels, out_channels, backbone,up_method, os=16, norm='bn'):
         super(DeepLabV3PlusCore, self).__init__()
         rate = 16 // os
         inter_channels = in_channels // os
         self.up_method = up_method
         self.aspp = ASPP(in_channels, inter_channels, self.up_method, rate=rate)
         self.backbone = backbone
-        # self.dropout = nn.Dropout2d(0.5, False)
         self.outer_branch = nn.Sequential(
             nn.Conv2d(256, 48, 1, 1, padding=0, bias=False),
-            nn.BatchNorm2d(48),
+            get_norm(norm, channels=48),
             nn.ReLU(inplace=True)
         )
         self.os = os
         self.merge_layers = nn.Sequential(
             nn.Conv2d(inter_channels + 48, inter_channels, 3, 1, padding=1, bias=False),
-            nn.BatchNorm2d(inter_channels),
+            get_norm(norm, channels=inter_channels),
             nn.ReLU(inplace=True),
-            # nn.Dropout2d(0.5, False),
             nn.Conv2d(inter_channels, inter_channels, 3, 1, padding=1, bias=False),
-            nn.BatchNorm2d(inter_channels),
+            get_norm(norm, channels=inter_channels),
             nn.ReLU(inplace=True),
             nn.Dropout2d(0.1, False)
         )
@@ -37,11 +36,12 @@ class DeepLabV3PlusCore(nn.Module):
     def forward(self, x):
         _, _, h, w = x.size()
         x, aux = self.backbone.backbone_forward(x)
-        hook = self.backbone.outer_branches[0]
+
         x = self.aspp(x)
         # x = self.dropout(x)
         x = F.interpolate(x, (h//4, w//4), **self.up_method)
 
+        hook = self.backbone.outer_branches[0]
         hook = self.outer_branch(hook)
         x = torch.cat([x, hook], 1)
         x = self.merge_layers(x)
@@ -51,16 +51,16 @@ class DeepLabV3PlusCore(nn.Module):
 
 
 class DeepLabV3Plus(nn.Module):
-    def __init__(self, nbr_classes, backbone='xception', deep_supervision=True, os=16, **kwargs):
+    def __init__(self, nbr_classes, backbone='xception', deep_supervision=True, os=16, norm='bn', **kwargs):
         super(DeepLabV3Plus, self).__init__()
         self.nbr_classes = nbr_classes
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
-        self.backbone = get_backbone(backbone, **kwargs)
+        self.backbone = get_backbone(backbone, norm=norm, **kwargs)
         self.core = DeepLabV3PlusCore(in_channels=2048, out_channels=nbr_classes, backbone=self.backbone, up_method=self.up_method, os=os)
         if deep_supervision:
             self.aux_branch = nn.Sequential(
                 nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(256),
+                get_norm(norm, channels=256),
                 nn.ReLU(False),
                 nn.Dropout2d(0.1, False),
                 nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
@@ -100,6 +100,6 @@ def get_deeplabv3plus(backbone='xception', model_pretrained=True, supervision=Tr
     return deeplab
 
 if __name__ == '__main__':
-    model = get_deeplabv3plus(backbone='xception', model_pretrained=False, backbone_pretrained=False, os=8)
+    model = get_deeplabv3plus(backbone='resnet50', model_pretrained=False, backbone_pretrained=False, os=8)
     g = make_dot(model(torch.rand(16, 3, 384, 384)), params=dict(model.named_parameters()))
-    g.render('deeplabv3plus')
+    g.render('deeplabv3plus_res50')
