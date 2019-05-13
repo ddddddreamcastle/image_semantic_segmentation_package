@@ -14,6 +14,7 @@ parser.add_argument('--backbone_pretrained_path', type=str, default='./weights/r
                     help='If `model_pretrained` is True, this param will be neglected.')
 parser.add_argument('--batch_size', type=int, default=12, help='batch size')
 parser.add_argument('--mode', type=str, default='train', help='options include `train` and `pred` ')
+parser.add_argument('--norm', type=str, default='gn', help='options include `bn`, `gn` or `sn`')
 
 # the learning rate setting refer to https://github.com/zhanghang1989/PyTorch-Encoding/blob/master/experiments/segmentation/option.py
 parser.add_argument('--learning_rate', type=float, default=None,
