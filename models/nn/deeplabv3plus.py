@@ -100,6 +100,6 @@ def get_deeplabv3plus(backbone='xception', model_pretrained=True, supervision=Tr
     return deeplab
 
 if __name__ == '__main__':
-    model = get_deeplabv3plus(backbone='resnet50', model_pretrained=False, backbone_pretrained=False, os=8)
+    model = get_deeplabv3plus(backbone='xception', model_pretrained=False, backbone_pretrained=False, os=8)
     g = make_dot(model(torch.rand(16, 3, 384, 384)), params=dict(model.named_parameters()))
     g.render('deeplabv3plus_res50')
