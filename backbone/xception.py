@@ -169,8 +169,15 @@ def get_xception():
                   backbone_pretrained=True, os=16, norm='bn', **kwargs):
         model = Xception(nbr_classes, os=os, norm=norm)
         if backbone_pretrained:
-            model.load_state_dict(torch.load(backbone_pretrained_path), strict=False)
-            print('xception weights are loaded successfully')
+            pretrain_weights = torch.load(backbone_pretrained_path)
+            model_weights = model.state_dict()
+            weights = {}
+            for k, v in pretrain_weights.items():
+                if model_weights[k].shape == v.shape:
+                    weights[k] = v
+            model_weights.update(weights)
+            model.load_state_dict(weights, strict=False)
+            print('xception weights are loaded successfully: %d/%d'%(len(weights), len(pretrain_weights)))
         return model
 
     return build_net
