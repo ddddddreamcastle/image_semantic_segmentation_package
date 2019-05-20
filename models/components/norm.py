@@ -57,11 +57,11 @@ class SwitchNorm1d(nn.Module):
     def forward(self, x):
         self._check_input_dim(x)
         mean_ln = x.mean(1, keepdim=True)
-        var_ln = x.var(1, keepdim=True)
+        var_ln = x.var(1, keepdim=True, unbiased=False)
 
         if self.training:
             mean_bn = x.mean(0, keepdim=True)
-            var_bn = x.var(0, keepdim=True)
+            var_bn = x.var(0, keepdim=True, unbiased=False)
             if self.using_moving_average:
                 self.running_mean.mul_(self.momentum)
                 self.running_mean.add_((1 - self.momentum) * mean_bn.data)
@@ -127,7 +127,7 @@ class SwitchNorm2d(nn.Module):
         N, C, H, W = x.size()
         x = x.view(N, C, -1)
         mean_in = x.mean(-1, keepdim=True)
-        var_in = x.var(-1, keepdim=True)
+        var_in = x.var(-1, keepdim=True, unbiased=False)
 
         mean_ln = mean_in.mean(1, keepdim=True)
         temp = var_in + mean_in ** 2
@@ -208,7 +208,7 @@ class SwitchNorm3d(nn.Module):
         N, C, D, H, W = x.size()
         x = x.view(N, C, -1)
         mean_in = x.mean(-1, keepdim=True)
-        var_in = x.var(-1, keepdim=True)
+        var_in = x.var(-1, keepdim=True, unbiased=False)
 
         mean_ln = mean_in.mean(1, keepdim=True)
         temp = var_in + mean_in ** 2
