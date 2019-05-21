@@ -97,7 +97,7 @@ class Manager(object):
                 target = target.cuda()
             preds = self.model(image)
             pred = preds
-            if self.model.deep_supervision:
+            if hasattr(self.model, 'deep_supervision') and self.model.deep_supervision:
                 pred = preds[0]
             meter.add(pred, target)
             pixAcc, mIoU = meter.values()
