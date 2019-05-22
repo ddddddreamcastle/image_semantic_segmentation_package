@@ -49,8 +49,8 @@ The items with hyperlinks are the experimental results from the original paper
 - [ ] LinkNet
 - [ ] SegNet
 - [ ] FCN
-- [ ] Unet(coding)
-- [ ] Unet++(coding)
+- [x] Unet(testing, only support setting VGG as backbone)
+- [ ] Unet++
 - [ ] DenseASPP
 - [ ] ICNet
 - [ ] BiSeNet
