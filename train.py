@@ -28,6 +28,7 @@ parser.add_argument('--supervision_weight', type=float, default=0.4)
 parser.add_argument('--se_loss', default= True)
 parser.add_argument('--se_loss_weight', type=float, default=0.2)
 parser.add_argument('--os', default=8, type=int)
+parser.add_argument('--sk_conn', type=bool, default= True, help='This param only takes effect if `model` is unet and `backbone` is vgg networks')
 
 #dataset
 parser.add_argument('--dataset', type=str, default='ade20k')

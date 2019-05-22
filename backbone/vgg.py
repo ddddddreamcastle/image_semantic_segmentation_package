@@ -14,7 +14,7 @@ conn_cfg = {
 }
 
 class VGG(nn.Module):
-    def __init__(self, nbr_classes=1000, nbr_layers=16, batch_norm=True, dilation=False, norm='bn'):
+    def __init__(self, nbr_classes=1000, nbr_layers=16, batch_norm=True, dilation=False, norm='bn', sk_conn = True):
         super(VGG, self).__init__()
         self.features = self._make_layers(cfg[nbr_layers], batch_norm=batch_norm, dilation=dilation, norm=norm)
         self.classifier = nn.Sequential(
@@ -28,14 +28,16 @@ class VGG(nn.Module):
         )
         self.nbr_layers = nbr_layers
         self.batch_norm = batch_norm
+        self.sk_conn = sk_conn
 
     def base_forward(self, x):
         self.skip_connections = []
         for idx, l in enumerate(self.features):
             x = l(x)
-            if idx in conn_cfg[self.nbr_layers][self.batch_norm]:
+            if self.sk_conn and idx in conn_cfg[self.nbr_layers][self.batch_norm]:
                 self.skip_connections.append(x)
-        self.skip_connections.reverse()
+        if self.sk_conn:
+            self.skip_connections.reverse()
         return x
 
     def forward(self, x):
@@ -71,8 +73,8 @@ class VGG(nn.Module):
 
 def get_vgg(nbr_layers=16, batch_norm=True, dilation=False):
     def build_net(backbone_pretrained_path='./weights/vgg19.pth', nbr_classes=1000,
-                  backbone_pretrained=True, norm='bn', **kwargs):
-        model = VGG(nbr_classes, nbr_layers=nbr_layers, batch_norm=batch_norm, dilation=dilation, norm=norm)
+                  backbone_pretrained=True, norm='bn', sk_conn=True, **kwargs):
+        model = VGG(nbr_classes, nbr_layers=nbr_layers, batch_norm=batch_norm, dilation=dilation, norm=norm, sk_conn=sk_conn)
         if backbone_pretrained:
             model.load_state_dict(torch.load(backbone_pretrained_path), strict=False)
             print('vgg weights are loaded successfully')
