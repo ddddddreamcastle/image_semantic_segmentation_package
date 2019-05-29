@@ -12,14 +12,18 @@ from torchviz import make_dot
 """
 
 class Up(nn.Module):
-    def __init__(self, in_channels, out_channels, norm='bn', up_sample=False):
+    def __init__(self, in_channels, out_channels, norm='bn', up_method=False):
         super(Up, self).__init__()
-        if up_sample:
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        if up_method:
             self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         else:
             self.up = nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2)
 
-        self.conv = nn.Sequential(
+        self.conv_up = nn.Sequential(
             nn.Conv2d(in_channels * 2, out_channels, kernel_size=3, padding=1),
             get_norm(name=norm, channels=out_channels),
             nn.ReLU(inplace=True),
@@ -28,55 +32,93 @@ class Up(nn.Module):
             nn.ReLU(inplace=True)
         )
 
-    def forward(self, x1, x2):
-        x1 = self.up(x1)
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            get_norm(name=norm, channels=out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            get_norm(name=norm, channels=out_channels),
+            nn.ReLU(inplace=True)
+        )
 
-        _, _, h2, w2 = x2.size()
-        _, _, h1, w1 = x1.size()
+    def forward(self, x, x2, concat=True, is_up=True):
 
-        diffH = h2 - h1
-        diffW = w2 - w1
+        if is_up:
+            x = self.up(x)
 
-        x1 = F.pad(x1, (diffW // 2, diffW - diffW // 2, diffH // 2, diffH - diffH // 2))
-        x = torch.cat([x1, x2], dim=1)
+        if concat:
+            _, _, h2, w2 = x2.size()
+            _, _, h1, w1 = x.size()
+            diffH = h2 - h1
+            diffW = w2 - w1
+            x = F.pad(x, (diffW // 2, diffW - diffW // 2, diffH // 2, diffH - diffH // 2))
+            x = torch.cat([x, x2], dim=1)
 
-        x = self.conv(x)
+        if concat:
+            x = self.conv_up(x)
+        else:
+            x = self.conv(x)
 
         return x
 
 class UNetCore(nn.Module):
-    def __init__(self, out_channels, norm='bn', up_sample=False):
+    def __init__(self, out_channels, norm='bn', up_sample=False, skip_dims=None):
         super(UNetCore, self).__init__()
 
-        self.up1 = Up(512, 512, up_sample=up_sample, norm=norm)
-        self.up2 = Up(512, 256, up_sample=up_sample, norm=norm)
-        self.up3 = Up(256, 128, up_sample=up_sample, norm=norm)
-        self.up4 = Up(128, 64, up_sample=up_sample, norm=norm)
-        self.up5 = Up(64, 32, up_sample=up_sample, norm=norm)
+        self.ups = nn.ModuleList([])
+
+        for i in range(1, len(skip_dims)):
+            self.ups.append(Up(skip_dims[i - 1], skip_dims[i], up_method=up_sample, norm=norm))
+        self.ups.append(Up(skip_dims[i], skip_dims[i] // 2, up_method=up_sample, norm=norm))
 
         self.conv = nn.Sequential(
-            nn.Conv2d(32, out_channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(skip_dims[-1] // 2, out_channels, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True)
         )
 
-    def forward(self, x, skip_connections):
+    def __up(self, up, skip, x, conn_idx):
+        if x.shape[2] * 2 == skip.shape[2] and x.shape[3] * 2 == skip.shape[3] and x.shape[1] == skip.shape[1]:
+            x = up(x, skip)
+            conn_idx += 1
+        elif x.shape[2] == skip.shape[2] and x.shape[3] == skip.shape[3] and x.shape[1] == skip.shape[1]:
+            x = up(x, skip, True, False)
+            conn_idx += 1
+        else:
+            x = up(x, None, False, False)
+        return x, conn_idx
+
+    def forward(self, x, skip_connections, skip_dims):
         _, _, h, w = x.size()
-        x = self.up1(x, skip_connections[0])
-        x = self.up2(x, skip_connections[1])
-        x = self.up3(x, skip_connections[2])
-        x = self.up4(x, skip_connections[3])
-        x = self.up5(x, skip_connections[4])
+        conn_idx = 0
+        while x.shape[2] > skip_connections[conn_idx].shape[2] or \
+                x.shape[3] > skip_connections[conn_idx].shape[3]:
+            conn_idx += 1
+
+        for up in self.ups:
+            x, conn_idx = self.__up(up, skip_connections[conn_idx], x, conn_idx)
+
         x = self.conv(x)
         return x
 
 class UNet(nn.Module):
-    def __init__(self, nbr_classes, backbone='vgg16', norm='bn', **kwargs):
+    def __init__(self, nbr_classes, backbone='vgg16', norm='bn', deep_supervision=True, **kwargs):
         super(UNet, self).__init__()
         self.nbr_classes = nbr_classes
+        self.deep_supervision = deep_supervision
+        self.up_method = {'mode': 'bilinear', 'align_corners': True}
         up_sample = False
         self.backbone = get_backbone(backbone, **kwargs)
         self.core = UNetCore(out_channels=nbr_classes,
-                             norm=norm, up_sample=up_sample)
+                             norm=norm, up_sample=up_sample, skip_dims = self.backbone.skip_dims)
+
+        if deep_supervision:
+            self.aux_branch = nn.Sequential(
+                nn.Conv2d(self.backbone.aux_dim, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                get_norm(norm, channels=256),
+                nn.ReLU(False),
+                nn.Dropout2d(0.1, False),
+                nn.Conv2d(256, nbr_classes, kernel_size=1, stride=1)
+            )
 
     def get_parameters_as_groups(self, lr, different_lr_in_layers=True):
         parameters = []
@@ -88,8 +130,14 @@ class UNet(nn.Module):
         return parameters
 
     def forward(self, x):
-        x = self.backbone.backbone_forward(x)
-        x = self.core(x, self.backbone.skip_connections)
+        _, _, h, w = x.size()
+        x, aux = self.backbone.backbone_forward(x)
+        x = self.core(x, self.backbone.skip_connections, self.backbone.skip_dims)
+
+        if self.deep_supervision:
+            aux = self.aux_branch(aux)
+            aux = F.interpolate(aux, (h, w), **self.up_method)
+            return x, aux
         return x
 
 def get_unet(backbone='vgg16', model_pretrained=True,
@@ -102,6 +150,7 @@ def get_unet(backbone='vgg16', model_pretrained=True,
     return psp
 
 if __name__ == '__main__':
-    model = get_unet(backbone='vgg16', model_pretrained=False, backbone_pretrained=False)
+    model = get_unet(backbone='xception', model_pretrained=False, backbone_pretrained=False, deep_supervision=True,
+                     sk_conn=True)
     g = make_dot(model(torch.rand(16, 3, 256, 256)), params=dict(model.named_parameters()))
-    g.render('unet_vgg16')
+    g.render('unet_resnet50')
