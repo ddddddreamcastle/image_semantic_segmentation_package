@@ -82,9 +82,10 @@ class Block(nn.Module):
         return main
 
 class Xception(nn.Module):
-    def __init__(self, nbr_classes=1000, os=8, norm='bn'):
+    def __init__(self, nbr_classes=1000, os=8, norm='bn', sk_conn=False):
         super(Xception, self).__init__()
-
+        self.sk_conn = sk_conn
+        self.aux_dim = 1024
         strides = None
         if os == 8:
             strides = [2,1,1]
@@ -118,6 +119,9 @@ class Xception(nn.Module):
 
         self.fc = nn.Linear(2048, nbr_classes)
 
+        if self.sk_conn:
+            self.skip_dims = [2048, 1024, 256, 128, 64]
+
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):
                 nn.init.xavier_uniform_(layer.weight)
@@ -130,23 +134,37 @@ class Xception(nn.Module):
 
     def base_forward(self, x):
         self.outer_branches = []
+        self.skip_connections = []
+
         x = self.conv_1(x)
         x = self.bn_1(x)
         x = self.relu(x)
-
         x = self.conv_2(x)
         x = self.bn_2(x)
         x = self.relu(x)
-
+        if self.sk_conn:
+            # 64, /2, /2
+            self.skip_connections.append(x)
         x = self.block_1(x)
+        if self.sk_conn:
+            # 128, /4, /4
+            self.skip_connections.append(x)
         x = self.block_2(x)
         self.outer_branches.append(self.block_2.outer_branch)
+        if self.sk_conn:
+            # 256, /8, /8
+            self.skip_connections.append(x)
         x = self.block_3(x)
 
-        for block in self.blocks:
+        for idx, block in enumerate(self.blocks):
             x = block(x)
 
         x = self.block_20(x)
+        if self.sk_conn:
+            # 1024, /16, /16
+            self.skip_connections.append(x)
+        if self.sk_conn:
+            self.skip_connections.reverse()
         return x
 
     def forward(self, x):
@@ -166,8 +184,8 @@ class Xception(nn.Module):
 
 def get_xception():
     def build_net(backbone_pretrained_path='./weights/xception.pth', nbr_classes=1000,
-                  backbone_pretrained=True, os=16, norm='bn', **kwargs):
-        model = Xception(nbr_classes, os=os, norm=norm)
+                  backbone_pretrained=True, os=16, norm='bn', sk_conn=False, **kwargs):
+        model = Xception(nbr_classes, os=os, norm=norm, sk_conn=sk_conn)
         if backbone_pretrained:
             pretrain_weights = torch.load(backbone_pretrained_path)
             model_weights = model.state_dict()
@@ -183,18 +201,21 @@ def get_xception():
     return build_net
 
 if __name__ == '__main__':
-    model = get_xception()(backbone_pretrained_path='../weights/xception.pth')
+    sample = torch.rand(16, 3, 256, 256)
+    model = get_xception()(backbone_pretrained_path='../weights/xception.pth', sk_conn=True)
+    model(sample)
+    print(len(model.skip_connections))
     # g = make_dot(model(torch.rand(16, 3, 384, 384)), params=dict(model.named_parameters()))
     # g.render('xception')
 
-    params = list(model.parameters())
-    k = 0
-    for i in params:
-        l = 1
-        print("layer architecture：" + str(list(i.size())))
-        for j in i.size():
-            l *= j
-        print("the number of parameters：" + str(l))
-        k = k + l
-    print("the total of parameters：" + str(k))
+    # params = list(model.parameters())
+    # k = 0
+    # for i in params:
+    #     l = 1
+    #     print("layer architecture：" + str(list(i.size())))
+    #     for j in i.size():
+    #         l *= j
+    #     print("the number of parameters：" + str(l))
+    #     k = k + l
+    # print("the total of parameters：" + str(k))
 

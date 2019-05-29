@@ -105,36 +105,49 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, nbr_classes=1000, is_bottleneck = True, nbr_layers=50, norm='bn'):
+    def __init__(self, nbr_classes=1000, is_bottleneck = True, nbr_layers=50, sk_conn=False, norm='bn'):
         super(ResNet, self).__init__()
         global net_structures
         if nbr_layers not in net_structures:
             raise RuntimeError("nbr_layers can only be 50, 101 or 152, but got {}".format(nbr_layers))
         net_structure = net_structures[nbr_layers]
-
-        self.head = nn.Sequential(
+        self.sk_conn = sk_conn
+        self.aux_dim = 1024
+        self.conv1 = nn.Sequential(
             conv3x3(3, 64, stride=2),
             get_norm(norm, channels=64),
-            nn.ReLU(inplace=True),
-
-            conv3x3(64, 64),
-            get_norm(norm, channels=64),
-            nn.ReLU(inplace=True),
-
-            conv3x3(64, 128),
-            get_norm(norm, channels=128),
-            nn.ReLU(inplace=True),
-
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+            nn.ReLU(inplace=True)
         )
 
+        self.conv2 = nn.Sequential(
+            conv3x3(64, 64),
+            get_norm(norm, channels=64),
+            nn.ReLU(inplace=True)
+        )
+
+        self.conv3 = nn.Sequential(
+            conv3x3(64, 128),
+            get_norm(norm, channels=128),
+            nn.ReLU(inplace=True)
+        )
+
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
         residual_block = Bottleneck if is_bottleneck else BasicBlock
+
         self.block_1 = self._make_layers(residual_block, 128, 64, net_structure[0], norm=norm)
-        self.block_2 = self._make_layers(residual_block, 64 * residual_block.expansion, 128, net_structure[1], stride=2, norm=norm)
-        self.block_3 = self._make_layers(residual_block, 128 * residual_block.expansion, 256, net_structure[2], dilation=2, norm=norm)
-        self.block_4 = self._make_layers(residual_block, 256 * residual_block.expansion, 512, net_structure[3], dilation=4, norm=norm)
+        self.block_2 = self._make_layers(residual_block, 64 * residual_block.expansion, 128, net_structure[1],
+                                         stride=2, norm=norm)
+        self.block_3 = self._make_layers(residual_block, 128 * residual_block.expansion, 256, net_structure[2],
+                                         dilation=2, norm=norm)
+        self.block_4 = self._make_layers(residual_block, 256 * residual_block.expansion, 512, net_structure[3],
+                                         dilation=4, norm=norm)
+
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(512 * residual_block.expansion, nbr_classes)
+
+        if self.sk_conn:
+            self.skip_dims = [2048, 1024, 256, 128]
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -146,14 +159,34 @@ class ResNet(nn.Module):
             elif isinstance(m, nn.GroupNorm):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+        print("init resnet")
 
     def base_forward(self, x):
         self.outer_branches = []
-        x = self.head(x)
+        if self.sk_conn:
+            self.skip_connections = []
+        # 3, h, w
+        x = self.conv1(x)
+        # 64, /2, /2
+        x = self.conv2(x)
+        # 64, /2, /2
+        x = self.conv3(x)
+        # 128, /2, /2
+        if self.sk_conn:
+            self.skip_connections.append(x)
+        x = self.maxpool(x)
+        # 128, /4, /4
         x = self.block_1(x)
+        # 256, /4, /4
+        if self.sk_conn:
+            self.skip_connections.append(x)
         self.outer_branches.append(x)
         x = self.block_2(x)
+        # 512, /8, /8
         x = self.block_3(x)
+        # 1024, /8, /8
+        if self.sk_conn:
+            self.skip_connections.append(x)
         return x
 
     def forward(self, x):
@@ -167,6 +200,8 @@ class ResNet(nn.Module):
     def backbone_forward(self, x):
         aux = self.base_forward(x)
         x = self.block_4(aux)
+        if self.sk_conn:
+            self.skip_connections.reverse()
         return x, aux
 
     def _make_layers(self, block, in_channel, out_channel, nbr_blocks, stride=1, dilation=1, norm='bn'):
@@ -189,12 +224,32 @@ class ResNet(nn.Module):
 
 def get_resnet(nbr_layers=50):
 
-    def build_net(backbone_pretrained_path='./weights/resnet50.pth', nbr_classes=1000, is_bottleneck = True,
-                  backbone_pretrained=True, norm='bn', **kwargs):
-        model = ResNet(nbr_classes, is_bottleneck, nbr_layers, norm=norm)
+    def build_net(backbone_pretrained_path='../weights/resnet50.pth', nbr_classes=1000, is_bottleneck = True,
+                  backbone_pretrained=True, norm='bn', sk_conn = False, **kwargs):
+        model = ResNet(nbr_classes, is_bottleneck, nbr_layers, norm=norm, sk_conn=sk_conn)
         if backbone_pretrained:
-            model.load_state_dict(torch.load(backbone_pretrained_path), strict=True)
-            print('resnet{} weights are loaded successfully'.format(nbr_layers))
+            pretrain_weights = torch.load(backbone_pretrained_path)
+            pretrained_weights_list = list(pretrain_weights.items())
+
+            model_weights = model.state_dict()
+            count = 0
+            layer_success = 0
+            for k, v in model_weights.items():
+                pretrain_k, pretrain_v = pretrained_weights_list[count]
+                if pretrain_v.shape == v.shape:
+                    model_weights[k] = pretrain_v
+                    layer_success += 1
+                count += 1
+            model_weights.update(model_weights)
+            model.load_state_dict(model_weights, strict=False)
+            print('resnet%d weights are loaded successfully: %d/%d' % (nbr_layers, layer_success, len(pretrain_weights)))
+
         return model
 
     return build_net
+
+if __name__ == '__main__':
+    sample = torch.rand(16, 3, 256, 256)
+    model = get_resnet(50)(backbone_pretrained=True, is_bottleneck=True, sk_conn=True)
+    model(sample)
+    print(len(model.skip_connections))

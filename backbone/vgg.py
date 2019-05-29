@@ -8,6 +8,10 @@ cfg = {
     19: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
+# conn_cfg = {
+#     16: {True: [5, 12, 22, 32, 42, 43], False: [3, 8, 15, 22, 29, 30]},
+#     19: {True: [5, 12, 25, 38, 51, 52], False: [3, 8, 17, 26, 35, 36]}
+# }
 conn_cfg = {
     16: {True: [5, 12, 22, 32, 42], False: [3, 8, 15, 22, 29]},
     19: {True: [5, 12, 25, 38, 51], False: [3, 8, 17, 26, 35]}
@@ -29,6 +33,10 @@ class VGG(nn.Module):
         self.nbr_layers = nbr_layers
         self.batch_norm = batch_norm
         self.sk_conn = sk_conn
+        self.aux_dim = 512
+
+        if self.sk_conn:
+            self.skip_dims = [512, 512, 256, 128, 64]
 
     def base_forward(self, x):
         self.skip_connections = []
@@ -47,7 +55,8 @@ class VGG(nn.Module):
         return x
 
     def backbone_forward(self, x):
-        return self.base_forward(x)
+        x = self.base_forward(x)
+        return x, x
 
     def _make_layers(self, cfg, batch_norm=True, dilation=True, norm='bn'):
         layers = []
@@ -82,7 +91,10 @@ def get_vgg(nbr_layers=16, batch_norm=True, dilation=False):
     return build_net
 
 if __name__ == '__main__':
-    vgg = VGG(nbr_classes=1000, nbr_layers=19, batch_norm=False, dilation=False, norm='bn')
-    for idx, v in enumerate(list(vgg.children())):
-        print(idx, v)
+    sample = torch.rand(16, 3, 224, 224)
+    vgg = VGG(nbr_classes=1000, nbr_layers=16, batch_norm=False, dilation=False, norm='bn', sk_conn=True)
+    vgg(sample)
+    print(len(vgg.skip_connections))
+    for l in vgg.skip_connections:
+        print(l.shape)
     # g = make_dot(vgg(torch.rand(16, 3, 256, 256)), params=dict(vgg.named_parameters()))
