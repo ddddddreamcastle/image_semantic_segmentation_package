@@ -39,17 +39,17 @@ The items with hyperlinks are the experimental results from the original paper
 
 ### TODO
 
-- [x] PSPNet (completed)
-- [x] ENCNet(completed)
+- [x] PSPNet
+- [x] ENCNet
 - [ ] ENCNet+JPU
-- [x] Deeplabv3(completed)
-- [x] Deeplabv3+(completed)
+- [x] Deeplabv3
+- [x] Deeplabv3+
 - [ ] RefineNet
 - [ ] FPN
 - [ ] LinkNet
 - [ ] SegNet
 - [ ] FCN
-- [x] Unet(testing, only support setting VGG as backbone)
+- [x] Unet
 - [ ] Unet++
 - [ ] DenseASPP
 - [ ] ICNet
