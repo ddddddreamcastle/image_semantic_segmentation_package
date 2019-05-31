@@ -8,10 +8,6 @@ cfg = {
     19: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
-# conn_cfg = {
-#     16: {True: [5, 12, 22, 32, 42, 43], False: [3, 8, 15, 22, 29, 30]},
-#     19: {True: [5, 12, 25, 38, 51, 52], False: [3, 8, 17, 26, 35, 36]}
-# }
 conn_cfg = {
     16: {True: [5, 12, 22, 32, 42], False: [3, 8, 15, 22, 29]},
     19: {True: [5, 12, 25, 38, 51], False: [3, 8, 17, 26, 35]}
@@ -39,7 +35,8 @@ class VGG(nn.Module):
             self.skip_dims = [512, 512, 256, 128, 64]
 
     def base_forward(self, x):
-        self.skip_connections = []
+        if self.sk_conn:
+            self.skip_connections = []
         for idx, l in enumerate(self.features):
             x = l(x)
             if self.sk_conn and idx in conn_cfg[self.nbr_layers][self.batch_norm]:

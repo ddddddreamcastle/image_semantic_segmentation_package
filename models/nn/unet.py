@@ -12,13 +12,13 @@ from torchviz import make_dot
 """
 
 class Up(nn.Module):
-    def __init__(self, in_channels, out_channels, norm='bn', up_method=False):
+    def __init__(self, in_channels, out_channels, norm='bn', up_method='conv'):
         super(Up, self).__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        if up_method:
+        if up_method == 'upsample':
             self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         else:
             self.up = nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2)
@@ -62,14 +62,13 @@ class Up(nn.Module):
         return x
 
 class UNetCore(nn.Module):
-    def __init__(self, out_channels, norm='bn', up_sample=False, skip_dims=None):
+    def __init__(self, out_channels, norm='bn', up_method='conv', skip_dims=None):
         super(UNetCore, self).__init__()
-
+        self.up_method = {'mode': 'bilinear', 'align_corners': True}
         self.ups = nn.ModuleList([])
-
         for i in range(1, len(skip_dims)):
-            self.ups.append(Up(skip_dims[i - 1], skip_dims[i], up_method=up_sample, norm=norm))
-        self.ups.append(Up(skip_dims[i], skip_dims[i] // 2, up_method=up_sample, norm=norm))
+            self.ups.append(Up(skip_dims[i - 1], skip_dims[i], up_method=up_method, norm=norm))
+        self.ups.append(Up(skip_dims[i], skip_dims[i] // 2, up_method=up_method, norm=norm))
 
         self.conv = nn.Sequential(
             nn.Conv2d(skip_dims[-1] // 2, out_channels, kernel_size=3, stride=1, padding=1),
@@ -80,23 +79,18 @@ class UNetCore(nn.Module):
         if x.shape[2] * 2 == skip.shape[2] and x.shape[3] * 2 == skip.shape[3] and x.shape[1] == skip.shape[1]:
             x = up(x, skip)
             conn_idx += 1
-        elif x.shape[2] == skip.shape[2] and x.shape[3] == skip.shape[3] and x.shape[1] == skip.shape[1]:
-            x = up(x, skip, True, False)
-            conn_idx += 1
+        elif x.shape[2] * 2 == skip.shape[2] and x.shape[3] * 2 == skip.shape[3] and x.shape[1] != skip.shape[1]:
+            x = up(x, None, False, False)
         else:
             x = up(x, None, False, False)
+            conn_idx += 1
         return x, conn_idx
 
     def forward(self, x, skip_connections, skip_dims):
         _, _, h, w = x.size()
         conn_idx = 0
-        while x.shape[2] > skip_connections[conn_idx].shape[2] or \
-                x.shape[3] > skip_connections[conn_idx].shape[3]:
-            conn_idx += 1
-
         for up in self.ups:
             x, conn_idx = self.__up(up, skip_connections[conn_idx], x, conn_idx)
-
         x = self.conv(x)
         return x
 
@@ -106,10 +100,10 @@ class UNet(nn.Module):
         self.nbr_classes = nbr_classes
         self.deep_supervision = deep_supervision
         self.up_method = {'mode': 'bilinear', 'align_corners': True}
-        up_sample = False
+        up_method = 'conv'
         self.backbone = get_backbone(backbone, **kwargs)
         self.core = UNetCore(out_channels=nbr_classes,
-                             norm=norm, up_sample=up_sample, skip_dims = self.backbone.skip_dims)
+                             norm=norm, up_method=up_method, skip_dims = self.backbone.skip_dims)
 
         if deep_supervision:
             self.aux_branch = nn.Sequential(
@@ -133,7 +127,9 @@ class UNet(nn.Module):
         _, _, h, w = x.size()
         x, aux = self.backbone.backbone_forward(x)
         x = self.core(x, self.backbone.skip_connections, self.backbone.skip_dims)
-
+        _, _, h2, w2 = x.size()
+        if h2 != h or w2 != w:
+            x = F.interpolate(x, (h, w), **self.up_method)
         if self.deep_supervision:
             aux = self.aux_branch(aux)
             aux = F.interpolate(aux, (h, w), **self.up_method)
@@ -150,7 +146,7 @@ def get_unet(backbone='vgg16', model_pretrained=True,
     return psp
 
 if __name__ == '__main__':
-    model = get_unet(backbone='xception', model_pretrained=False, backbone_pretrained=False, deep_supervision=True,
+    model = get_unet(backbone='resnet50', model_pretrained=False, backbone_pretrained=False, deep_supervision=True,
                      sk_conn=True)
     g = make_dot(model(torch.rand(16, 3, 256, 256)), params=dict(model.named_parameters()))
     g.render('unet_resnet50')
