@@ -48,7 +48,7 @@ The items with hyperlinks are the experimental results from the original paper
 - [ ] FPN
 - [ ] LinkNet
 - [ ] SegNet
-- [ ] FCN
+- [x] FCN
 - [x] Unet
 - [ ] Unet++
 - [ ] DenseASPP
