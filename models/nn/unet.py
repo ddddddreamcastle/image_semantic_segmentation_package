@@ -119,6 +119,8 @@ class UNet(nn.Module):
         if different_lr_in_layers:
             parameters.append({'params': self.backbone.parameters(), 'lr':lr})
             parameters.append({'params': self.core.parameters(), 'lr':lr*10})
+            if self.deep_supervision:
+                parameters.append({'params': self.aux_branch.parameters(), 'lr': lr * 10})
         else:
             parameters.append({'params': self.parameters(), 'lr': lr })
         return parameters
