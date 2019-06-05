@@ -121,6 +121,7 @@ class Xception(nn.Module):
 
         if self.sk_conn:
             self.skip_dims = [2048, 1024, 256, 128, 64]
+            self.ratio_mapping = {2: -1, 4: -2, 8: -3, 16:-4}
 
         for layer in self.modules():
             if isinstance(layer, nn.Conv2d):

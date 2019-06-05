@@ -148,6 +148,7 @@ class ResNet(nn.Module):
 
         if self.sk_conn:
             self.skip_dims = [2048, 1024, 256, 128]
+            self.ratio_mapping = {2: -1, 4: -2, 8: -3}
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

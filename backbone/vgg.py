@@ -33,6 +33,7 @@ class VGG(nn.Module):
 
         if self.sk_conn:
             self.skip_dims = [512, 512, 256, 128, 64]
+            self.ratio_mapping = {1: -1, 2:-2, 4:-3, 8:-4, 16:-5, 32:-5}
 
     def base_forward(self, x):
         if self.sk_conn:
@@ -90,8 +91,9 @@ def get_vgg(nbr_layers=16, batch_norm=True, dilation=False):
 if __name__ == '__main__':
     sample = torch.rand(16, 3, 224, 224)
     vgg = VGG(nbr_classes=1000, nbr_layers=16, batch_norm=False, dilation=False, norm='bn', sk_conn=True)
-    vgg(sample)
-    print(len(vgg.skip_connections))
-    for l in vgg.skip_connections:
-        print(l.shape)
-    # g = make_dot(vgg(torch.rand(16, 3, 256, 256)), params=dict(vgg.named_parameters()))
+    # vgg(sample)
+    # print(len(vgg.skip_connections))
+    # for l in vgg.skip_connections:
+    #     print(l.shape)
+    g = make_dot(vgg(sample), params=dict(vgg.named_parameters()))
+    g.render('vgg')

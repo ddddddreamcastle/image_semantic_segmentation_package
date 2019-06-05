@@ -4,6 +4,7 @@ from torch.nn import functional as F
 import torch
 from datasets import datasets
 from models.components.norm import get_norm
+from torchviz import make_dot
 """
     Reference:
         Zhao, Hengshuang, et al. "Pyramid scene parsing network." Proceedings of the IEEE conference on computer vision and pattern recognition. 2017.
@@ -113,3 +114,8 @@ def get_pspnet(backbone='resnet50', model_pretrained=True, supervision=True,
         psp.load_state_dict(torch.load(model_pretrain_path)['state_dict'], strict=False)
         print("model weights are loaded successfully")
     return psp
+
+if __name__ == '__main__':
+    model = get_pspnet(backbone='resnet50', model_pretrained=False, backbone_pretrained=False)
+    g = make_dot(model(torch.rand(16, 3, 256, 256)), params=dict(model.named_parameters()))
+    g.render('fcn')
