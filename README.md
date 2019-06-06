@@ -25,6 +25,7 @@ A image semantic segmentation toolbox (single GPU) contains some common semantic
 | EncNet  | resnet50 | bn |ade20k | 8 | 400 | 50|   77.7   |   40.3   |
 | DeeplabV3 [3]  | xception | bn |ade20k | 8 | 384 | 50|   77.6   |   39.5   |
 | DeeplabV3+ [4]  | xception | bn |ade20k | 8 | 384 | 50|   77.9   |   39.8   |
+| FCN32s [5]  | vgg19bn | bn |ade20k | 12 | 384 | 50|   73.0   |   31.2   |
 
 The items with hyperlinks are the experimental results from the original paper
 
@@ -70,3 +71,5 @@ The items with hyperlinks are the experimental results from the original paper
 [3] [Chen, Liang Chieh , et al. "Rethinking Atrous Convolution for Semantic Image Segmentation." (2017).](https://arxiv.org/abs/1706.05587)
 
 [4] [Chen, Liang-Chieh, et al. "Encoder-decoder with atrous separable convolution for semantic image segmentation." Proceedings of the European Conference on Computer Vision (ECCV). 2018.](https://arxiv.org/abs/1802.02611)
+
+[5] [Shelhamer, Evan, J. Long, and T. Darrell. "Fully Convolutional Networks for Semantic Segmentation." IEEE Transactions on Pattern Analysis & Machine Intelligence 39.4(2017):640-651.](http://de.arxiv.org/pdf/1411.4038)
